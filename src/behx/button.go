@@ -7,7 +7,7 @@ import (
 // The type wraps Telegram API's button to provide Action functionality.
 type Button struct {
 	apix.KeyboardButton
-	Action Acter
+	Action Action
 }
 
 type ButtonMap map[string] *Button
@@ -18,7 +18,7 @@ type ButtonRow []*Button
 // Returns new button with specified text and action.
 func NewButton(text string, action Action) *Button {
 	return &Button{
-		KeyboardButton: apix.NewKeyboardButton(text)
+		KeyboardButton: apix.NewKeyboardButton(text),
 		Action: action,
 	}
 }

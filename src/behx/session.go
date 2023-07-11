@@ -16,4 +16,13 @@ type Session struct {
 // as key.
 type SessionMap map[SessionId] *Session
 
+func (si SessionId) ToTelegram() int64 {
+	return int64(si)
+}
+
+func (sm SessionMap) Add(sid SessionId) {
+	sm[sid] = &Session{
+		Id: sid,
+	}
+}
 

@@ -13,7 +13,7 @@ type Behaviour struct {
 
 // Check whether the screen exists in the behaviour.
 func (beh *Behaviour) ScreenExists(id ScreenId) bool {
-	_, ok := bot.behaviour.Screens[id]
+	_, ok := beh.Screens[id]
 	return ok
 }
 

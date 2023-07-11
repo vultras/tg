@@ -3,11 +3,11 @@ package behx
 // Implementing the intereface lets you
 // provide behaviour for the buttons etc.
 type Action interface {
-	Act(*Bot)
+	Act(*Context)
 }
 
 // Customized action for the bot.
-type CustomAction func(*Bot)
+type CustomAction func(*Context)
 
 // The type implements changing screen to the underlying ScreenId
 type ScreenChange ScreenId
@@ -18,7 +18,7 @@ func NewScreenChange(screen string) ScreenChange {
 }
 
 // Returns new CustomAction.
-func NewCustomAction(fn func(*Bot)) CustomAction {
+func NewCustomAction(fn func(*Context)) CustomAction {
 	return CustomAction(fn)
 }
 
@@ -27,7 +27,7 @@ func (sc ScreenChange) Act(c *Context) {
 }
 
 func (ca CustomAction) Act(c *Context) {
-	ca(bot)
+	ca(c)
 }
 
 
