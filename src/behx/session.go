@@ -10,6 +10,7 @@ type Session struct {
 	Id SessionId
 	CurrentScreenId ScreenId
 	PreviousScreenId ScreenId
+	KeyboardId KeyboardId
 }
 
 // The type represents map of sessions using

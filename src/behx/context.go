@@ -28,7 +28,6 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 
 // Sends to the user specified text.
 func (c *Context) Send(text string) error {
-	
 	return nil
 }
 

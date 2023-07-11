@@ -8,8 +8,18 @@ package behx
 type Behaviour struct {
 	Start Action
 	Screens ScreenMap
+	Keyboards KeyboardMap
 }
 
+func NewBehaviour(
+	start Action,
+	screens ScreenMap,
+	keyboards KeyboardMap,
+) *Behaviour {
+	return &Behaviour{
+		start, screens, keyboards,
+	}
+}
 
 // Check whether the screen exists in the behaviour.
 func (beh *Behaviour) ScreenExists(id ScreenId) bool {

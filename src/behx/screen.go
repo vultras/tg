@@ -16,20 +16,23 @@ type ScreenText string
 type Screen struct {
 	// Text to be sent to the user when changing to the screen.
 	Text ScreenText
-	// Keyboard to be displayed on the screen.
-	Keyboard *Keyboard
+	
 	// The keyboard to be sent in the message part.
-	InlineKeyboard *Keyboard
+	InlineKeyboardId KeyboardId
+	
+	// Keyboard to be displayed on the screen.
+	KeyboardId KeyboardId
 }
 
 // Map structure for the screens.
 type ScreenMap map[ScreenId] *Screen
 
 // Returns the new screen with specified Text and Keyboard.
-func NewScreen(text ScreenText, kbd *Keyboard) *Screen {
+func NewScreen(text ScreenText, ikbd KeyboardId, kbd KeyboardId) *Screen {
 	return &Screen {
 		Text: text,
-		Keyboard: kbd,
+		InlineKeyboardId: ikbd,
+		KeyboardId: kbd,
 	}
 }
 
@@ -39,25 +42,40 @@ func (st ScreenText) String() string {
 }
 
 // Renders output of the screen to the side of the user.
-func (s *Screen) Render(c *Context) {
+func (s *Screen) Render(c *Context) error {
 	id := c.S.Id.ToTelegram()
+	
 	msg := apix.NewMessage(id, s.Text.String())
 	
-	// First sending the inline keyboard.
-	if s.InlineKeyboard != nil {
-		msg.ReplyMarkup = s.InlineKeyboard.ToTelegram()
-		if _, err := c.B.Send(msg) ; err != nil {
-			panic(err)
+	if s.InlineKeyboardId != "" {
+		kbd, ok := c.B.Keyboards[s.InlineKeyboardId]
+		if !ok {
+			return KeyboardNotExistErr
 		}
+		msg.ReplyMarkup = kbd.ToTelegramInline()
 	}
 	
-	// Then sending the screen one.
-	if s.Keyboard != nil {
-		msg = apix.NewMessage(id, "check")
-		msg.ReplyMarkup = s.Keyboard.ToTelegram()
-		if _, err := c.B.Send(msg) ; err != nil {
-			panic(err)
-		}
+	_, err := c.B.Send(msg)
+	if err != nil {
+		return err
 	}
+	
+	if s.KeyboardId != "" {
+		msg = apix.NewMessage(id, ">")
+		
+		kbd, ok := c.B.Keyboards[s.KeyboardId]
+		if !ok {
+			return KeyboardNotExistErr
+		}
+		
+		msg.ReplyMarkup = kbd.ToTelegram()
+		if _, err := c.B.Send(msg) ; err != nil {
+			return err
+		}
+		
+	}
+	
+	
+	return nil
 }
 

@@ -2,6 +2,7 @@ package behx
 
 import (
     apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+    "log"
 )
 
 // The wrapper around Telegram API.
@@ -66,7 +67,10 @@ func (bot *Bot) Run() error {
 		}
 		
 		screen := bot.Screens[session.CurrentScreenId]
-		screen.Render(ctx)
+		err := screen.Render(ctx)
+		if err != nil {
+			log.Println("screen rendering:", err)
+		}
 	}
 	
 	return nil

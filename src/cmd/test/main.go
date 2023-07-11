@@ -8,34 +8,61 @@ import (
     "boteval/src/behx"
 )
 
-var startScreen = behx.NewScreen(
-	"Hello, World!",
-	behx.NewKeyboard(
-		behx.NewButtonRow(
-			behx.NewButton(
-				"PRESS ME",
-				behx.NewCustomAction(func(c *behx.Context){
-					log.Println("pressed the button!")
-				}),
-			),
-			behx.NewButton("PRESS ME 2", behx.NewCustomAction(func(c *behx.Context){
-				log.Println("pressed another button!")
-			})),
+var rootKbd = behx.NewKeyboard(
+	behx.NewButtonRow(
+		behx.NewButton(
+			"PRESS ME",
+			behx.NewCustomAction(func(c *behx.Context){
+				log.Println("pressed the button!")
+			}),
 		),
-		behx.NewButtonRow(
-			behx.NewButton("PRESS ME 3", behx.NewCustomAction(func(c *behx.Context){
-				log.Println("pressed third button!")
-			})),
-		),
+		behx.NewButton("PRESS ME 2", behx.NewCustomAction(func(c *behx.Context){
+			log.Println("pressed another button!")
+		})),
+	),
+	behx.NewButtonRow(
+		behx.NewButton("PRESS ME 3", behx.NewCustomAction(func(c *behx.Context){
+			log.Println("pressed third button!")
+		})),
 	),
 )
 
-var behaviour = &behx.Behaviour{
-	Start: behx.NewScreenChange("start"),
-	Screens: behx.ScreenMap{
+var inlineKbd = behx.NewKeyboard(
+	behx.NewButtonRow(
+		behx.NewButton(
+			"INLINE PRESS ME",
+			behx.NewCustomAction(func(c *behx.Context){
+				log.Println("INLINE pressed the button!")
+			}),
+		),
+		behx.NewButton("INLINE PRESS ME 2", behx.NewCustomAction(func(c *behx.Context){
+			log.Println("INLINE pressed another button!")
+		})),
+	),
+	behx.NewButtonRow(
+		behx.NewButton("INLINE PRESS ME 3", behx.NewCustomAction(func(c *behx.Context){
+			log.Println("INLINE pressed third button!")
+		})),
+	),
+)
+
+
+var startScreen = behx.NewScreen(
+	"Hello, World!",
+	"inline",
+	"root",
+)
+
+var behaviour = behx.NewBehaviour(
+	behx.NewScreenChange("start"),
+	behx.ScreenMap{
 		"start": startScreen,
 	},
-}
+	behx.KeyboardMap{
+		"root": rootKbd,
+		"inline": inlineKbd,
+	},
+)
 
 func main() {
 	token := os.Getenv("BOT_TOKEN")
