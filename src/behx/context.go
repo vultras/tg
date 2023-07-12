@@ -2,7 +2,7 @@ package behx
 
 import (
 	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"fmt"
+	//"fmt"
 )
 
 // The type represents way to interact with user in
@@ -20,10 +20,10 @@ func (ctx *Context) handleUpdateChan(updates chan *Update) {
 	for u := range updates {
 		screen := bot.Screens[session.CurrentScreenId]
 		
-		kbd := bot.Keyboards[screen.KeyboardId]
-		btns := kbd.buttonMap()
-		
 		if u.Message != nil {
+		
+			kbd := bot.Keyboards[screen.KeyboardId]
+			btns := kbd.buttonMap()
 			text := u.Message.Text
 			btn, ok := btns[text]
 			
@@ -35,11 +35,16 @@ func (ctx *Context) handleUpdateChan(updates chan *Update) {
 			btn.Action.Act(ctx)
 		} else if u.CallbackQuery != nil {
 			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
+			data := u.CallbackQuery.Data
 			
 			_, err := bot.Request(cb)
 			if err != nil {
 				panic(err)
 			}
+			kbd := bot.Keyboards[screen.InlineKeyboardId]
+			btns := kbd.buttonMap()
+			btn := btns[data]
+			btn.Action.Act(ctx)
 		}
 	}
 }

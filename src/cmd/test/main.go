@@ -47,9 +47,10 @@ var inlineKbd = behx.NewKeyboard(
 		})),
 	),
 	behx.NewButtonRow(
-		behx.NewButton("INLINE PRESS ME 3", behx.NewCustomAction(func(c *behx.Context){
-			log.Println("INLINE pressed third button!")
-		})),
+		behx.NewButton(
+			"INLINE PRESS ME 3",
+			behx.ScreenChange("second"),
+		),
 	),
 )
 
