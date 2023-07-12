@@ -11,14 +11,21 @@ import (
 var rootKbd = behx.NewKeyboard(
 	behx.NewButtonRow(
 		behx.NewButton(
-			"1",
+			"Increment",
 			behx.NewCustomAction(func(c *behx.Context){
-				log.Println("pressed the button!")
+				counter := c.V["counter"].(*int)
+				*counter++
+				c.Sendf("%d", *counter)
 			}),
 		),
-		behx.NewButton("PRESS ME 2", behx.NewCustomAction(func(c *behx.Context){
-			log.Println("pressed another button!")
-		})),
+		behx.NewButton(
+			"Decrement",
+			behx.NewCustomAction(func(c *behx.Context){
+				counter := c.V["counter"].(*int)
+				*counter--
+				c.Sendf("%d", *counter)
+			}),
+		),
 	),
 	behx.NewButtonRow(
 		behx.NewButton("To second screen",  behx.NewScreenChange("second")),
@@ -68,7 +75,15 @@ var secondScreen = behx.NewScreen(
 )
 
 var behaviour = behx.NewBehaviour(
-	behx.NewScreenChange("start"),
+	behx.NewCustomAction(func(c *behx.Context){
+		// This way we provide counter for EACH user.
+		c.V["counter"] = new(int)
+		
+		// Do NOT forget to change to some of the screens
+		// since they are the ones who provide behaviour
+		// definition.
+		c.ChangeScreen("start")
+	}),
 	behx.ScreenMap{
 		"start": startScreen,
 		"second": secondScreen,

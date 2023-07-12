@@ -2,7 +2,7 @@ package behx
 
 import (
 	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	//"fmt"
+	"fmt"
 )
 
 // The type represents way to interact with user in
@@ -71,6 +71,12 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 
 // Sends to the user specified text.
 func (c *Context) Send(text string) error {
-	return nil
+	msg := apix.NewMessage(c.Id.ToTelegram(), text)
+	_, err := c.B.Send(msg)
+	return err
+}
+
+func (c *Context) Sendf(format string, v ...any) error {
+	return c.Send(fmt.Sprintf(format, v...))
 }
 

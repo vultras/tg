@@ -21,6 +21,9 @@ type Session struct {
 	PreviousScreenId ScreenId
 	// The currently showed on display keyboard.
 	KeyboardId KeyboardId
+	
+	// Custom data for each user.
+	V map[string] any
 }
 
 // The type represents map of sessions using
@@ -31,6 +34,7 @@ type SessionMap map[SessionId] *Session
 func NewSession(id SessionId) *Session {
 	return &Session{
 		Id: id,
+		V: make(map[string] any),
 	}
 }
 
