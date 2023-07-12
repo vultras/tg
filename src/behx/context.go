@@ -1,5 +1,10 @@
 package behx
 
+import (
+	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"fmt"
+)
+
 // The type represents way to interact with user in
 // handling functions. Is provided to Act() function always.
 type Context struct {
@@ -13,12 +18,12 @@ func (ctx *Context) handleUpdateChan(updates chan *Update) {
 	session := ctx.Session
 	bot.Start.Act(ctx)
 	for u := range updates {
+		screen := bot.Screens[session.CurrentScreenId]
+		
+		kbd := bot.Keyboards[screen.KeyboardId]
+		btns := kbd.buttonMap()
+		
 		if u.Message != nil {
-			screen := bot.Screens[session.CurrentScreenId]
-			
-			kbd := bot.Keyboards[screen.KeyboardId]
-			btns := kbd.buttonMap()
-			
 			text := u.Message.Text
 			btn, ok := btns[text]
 			

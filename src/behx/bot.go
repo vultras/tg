@@ -43,10 +43,11 @@ func (bot *Bot) Run() error {
 	
 	chans := make(map[SessionId] chan *Update)
 	for u := range updates {
+		var sid SessionId
 		if u.Message != nil {	
 			// Create new session if the one does not exist
 			// for this user.
-			sid := SessionId(u.Message.Chat.ID)
+			sid = SessionId(u.Message.Chat.ID)
 			if _, ok := bot.sessions[sid] ; !ok {
 				bot.sessions.Add(sid)
 			} 
@@ -71,10 +72,13 @@ func (bot *Bot) Run() error {
 					continue
 				}
 			}
-			
-			chn := chans[sid]
+		} else if u.CallbackQuery != nil {
+			sid = SessionId(u.CallbackQuery.Message.Chat.ID)
+		}
+		chn, ok := chans[sid]
+		if ok {
 			chn <- &u
-		} 
+		}
 	}
 	
 	return nil

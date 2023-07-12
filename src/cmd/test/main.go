@@ -29,9 +29,7 @@ var secondKbd = behx.NewKeyboard(
 	behx.NewButtonRow(
 		behx.NewButton(
 			"❤",
-			behx.NewCustomAction(func(c *behx.Context){
-				log.Println("pressed the button!")
-			}),
+			behx.NewScreenChange("start"),
 		),
 	),
 )
