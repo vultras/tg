@@ -66,7 +66,7 @@ func (kbd *Keyboard) buttonMap() ButtonMap {
 	ret := make(ButtonMap)
 	for _, vi := range kbd.Rows {
 		for _, vj := range vi {
-			ret[vj.Text] = vj
+			ret[vj.Key()] = vj
 		}
 	}
 	

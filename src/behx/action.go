@@ -23,34 +23,13 @@ func NewCustomAction(fn func(*Context)) CustomAction {
 }
 
 func (sc ScreenChange) Act(c *Context) {
-	c.ChangeScreen(ScreenId(sc))
+	err := c.ChangeScreen(ScreenId(sc))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (ca CustomAction) Act(c *Context) {
 	ca(c)
 }
-
-
-/*
-// The type describes interface
-// defining what should be done.
-type Actioner interface {
-	Act(*bot)
-}
-
-// Simple way to define that the button should just change
-// screen to the Id.
-type ScreenChanger ScreenId
-
-// Custom function to be executed on button press.
-type ActionFunc func(*Bot)
-
-func (a ActionFunc) Act(bot *Bot) {
-	a(bot)
-}
-
-func (sc ScreenChanger) Act(bot *Bot) {
-	bot.ChangeScreenTo(sc)
-}
-*/
 

@@ -2,7 +2,7 @@ package behx
 
 import (
     apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-    "log"
+    //"log"
 )
 
 // The wrapper around Telegram API.
@@ -41,36 +41,40 @@ func (bot *Bot) Run() error {
 	
 	updates := bot.GetUpdatesChan(uc)
 	
+	chans := make(map[SessionId] chan *Update)
 	for u := range updates {
-		
-		// Create new session if the one does not exist
-		// for this user.
-		sid := SessionId(u.Message.Chat.ID)
-		if _, ok := bot.sessions[sid] ; !ok {
-			bot.sessions.Add(sid)
-		}
-		
-		session := bot.sessions[sid]
-		ctx := &Context{
-			B: bot,
-			S: session,
-		}
-		
-		// The "start" command resets the bot
-		// by executing the Start Action.
-		if u.Message.IsCommand() {
-			cmd := u.Message.Command()
-			if cmd == "start" {
-				bot.Start.Act(ctx)
+		if u.Message != nil {	
+			// Create new session if the one does not exist
+			// for this user.
+			sid := SessionId(u.Message.Chat.ID)
+			if _, ok := bot.sessions[sid] ; !ok {
+				bot.sessions.Add(sid)
+			} 
+			
+			
+			// The "start" command resets the bot
+			// by executing the Start Action.
+			if u.Message.IsCommand() {
+				cmd := u.Message.Command()
+				if cmd == "start" {
+					// Getting current session and context.
+					session := bot.sessions[sid]
+					ctx := &Context{
+						B: bot,
+						Session: session,
+					}
+					
+					chn := make(chan *Update)
+					chans[sid] = chn
+					// Starting the goroutine for the user.
+					go ctx.handleUpdateChan(chn)
+					continue
+				}
 			}
-			continue
-		}
-		
-		screen := bot.Screens[session.CurrentScreenId]
-		err := screen.Render(ctx)
-		if err != nil {
-			log.Println("screen rendering:", err)
-		}
+			
+			chn := chans[sid]
+			chn <- &u
+		} 
 	}
 	
 	return nil

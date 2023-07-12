@@ -11,7 +11,7 @@ import (
 var rootKbd = behx.NewKeyboard(
 	behx.NewButtonRow(
 		behx.NewButton(
-			"PRESS ME",
+			"1",
 			behx.NewCustomAction(func(c *behx.Context){
 				log.Println("pressed the button!")
 			}),
@@ -21,9 +21,18 @@ var rootKbd = behx.NewKeyboard(
 		})),
 	),
 	behx.NewButtonRow(
-		behx.NewButton("PRESS ME 3", behx.NewCustomAction(func(c *behx.Context){
-			log.Println("pressed third button!")
-		})),
+		behx.NewButton("To second screen",  behx.NewScreenChange("second")),
+	),
+)
+
+var secondKbd = behx.NewKeyboard(
+	behx.NewButtonRow(
+		behx.NewButton(
+			"❤",
+			behx.NewCustomAction(func(c *behx.Context){
+				log.Println("pressed the button!")
+			}),
+		),
 	),
 )
 
@@ -53,14 +62,22 @@ var startScreen = behx.NewScreen(
 	"root",
 )
 
+var secondScreen = behx.NewScreen(
+	"Second screen!",
+	"",
+	"second",
+)
+
 var behaviour = behx.NewBehaviour(
 	behx.NewScreenChange("start"),
 	behx.ScreenMap{
 		"start": startScreen,
+		"second": secondScreen,
 	},
 	behx.KeyboardMap{
 		"root": rootKbd,
 		"inline": inlineKbd,
+		"second": secondKbd,
 	},
 )
 

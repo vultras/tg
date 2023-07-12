@@ -41,9 +41,9 @@ func (st ScreenText) String() string {
 	return string(st)
 }
 
-// Renders output of the screen to the side of the user.
+// Renders output of the screen only to the side of the user.
 func (s *Screen) Render(c *Context) error {
-	id := c.S.Id.ToTelegram()
+	id := c.Id.ToTelegram()
 	
 	msg := apix.NewMessage(id, s.Text.String())
 	
@@ -60,21 +60,27 @@ func (s *Screen) Render(c *Context) error {
 		return err
 	}
 	
-	if s.KeyboardId != "" {
-		msg = apix.NewMessage(id, ">")
+	msg = apix.NewMessage(id, ">")
+	// Checking if we need to resend the keyboard.
+	if s.KeyboardId != c.KeyboardId {
+		// Remove keyboard by default.
+		var tkbd any
+		tkbd = apix.NewRemoveKeyboard(true)
 		
-		kbd, ok := c.B.Keyboards[s.KeyboardId]
-		if !ok {
-			return KeyboardNotExistErr
+		// Replace keyboard with the new one.
+		if s.KeyboardId != "" {
+			kbd, ok := c.B.Keyboards[s.KeyboardId]
+			if !ok {
+				return KeyboardNotExistErr
+			}
+			tkbd = kbd.ToTelegram()
 		}
 		
-		msg.ReplyMarkup = kbd.ToTelegram()
+		msg.ReplyMarkup = tkbd
 		if _, err := c.B.Send(msg) ; err != nil {
 			return err
 		}
-		
-	}
-	
+	} 
 	
 	return nil
 }

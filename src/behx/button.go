@@ -58,6 +58,15 @@ func (btn *Button) ToTelegramInline() apix.InlineKeyboardButton {
 	return apix.NewInlineKeyboardButtonData(btn.Text, btn.Text)
 }
 
+// Return the key of the button to identify it by messages and callbacks.
+func (btn *Button) Key() string {
+	if btn.Data != "" {
+		return btn.Data
+	}
+	
+	// If no match then return the data one with data the same as the text.
+	return btn.Text
+}
 
 func NewButtonRow(btns ...*Button) ButtonRow {
 	return btns
