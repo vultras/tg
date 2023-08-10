@@ -1,4 +1,4 @@
-module boteval
+module github.com/mojosa-software/got
 
 go 1.20
 

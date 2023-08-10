@@ -1,8 +1,9 @@
-package behx
+package tx
 
 import (
-	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"fmt"
+
+	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 // The type represents way to interact with user in
@@ -19,24 +20,24 @@ func (ctx *Context) handleUpdateChan(updates chan *Update) {
 	bot.Start.Act(ctx)
 	for u := range updates {
 		screen := bot.Screens[session.CurrentScreenId]
-		
+
 		if u.Message != nil {
-		
+
 			kbd := bot.Keyboards[screen.KeyboardId]
 			btns := kbd.buttonMap()
 			text := u.Message.Text
 			btn, ok := btns[text]
-			
+
 			// Skipping wrong text messages.
 			if !ok {
 				continue
 			}
-			
+
 			btn.Action.Act(ctx)
 		} else if u.CallbackQuery != nil {
 			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
 			data := u.CallbackQuery.Data
-			
+
 			_, err := bot.Request(cb)
 			if err != nil {
 				panic(err)
@@ -55,17 +56,17 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	if c.CurrentScreenId == screenId {
 		return nil
 	}
-	
-	if !c.B.ScreenExists(screenId) {
+
+	if !c.B.ScreenExist(screenId) {
 		return ScreenNotExistErr
 	}
-	
+
 	screen := c.B.Screens[screenId]
 	screen.Render(c)
-	
+
 	c.Session.ChangeScreen(screenId)
 	c.KeyboardId = screen.KeyboardId
-	
+
 	return nil
 }
 
@@ -79,4 +80,3 @@ func (c *Context) Send(text string) error {
 func (c *Context) Sendf(format string, v ...any) error {
 	return c.Send(fmt.Sprintf(format, v...))
 }
-

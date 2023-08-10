@@ -1,8 +1,9 @@
-package behx
+package tx
 
 import (
-    apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
 /*
 var otherKeyboard = tgbotapi.NewReplyKeyboard(
     tgbotapi.NewKeyboardButtonRow(
@@ -22,20 +23,27 @@ type KeyboardId string
 // The type represents reply keyboard which
 // is supposed to be showed on a Screen.
 type Keyboard struct {
+	Id   KeyboardId
 	Rows []ButtonRow
 }
 
-type KeyboardMap map[KeyboardId] *Keyboard
+type KeyboardMap map[KeyboardId]*Keyboard
 
 // Return the new reply keyboard with rows as specified.
-func NewKeyboard(rows ...ButtonRow) *Keyboard {
+func NewKeyboard(id KeyboardId) *Keyboard {
 	return &Keyboard{
-		Rows: rows,
+		Id: id,
 	}
 }
 
+// Adds a new button row to the current keyboard.
+func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
+	kbd.Rows = append(kbd.Rows, btns)
+	return kbd
+}
+
 // Convert the Keyboard to the Telegram API type.
-func (kbd *Keyboard) ToTelegram() apix.ReplyKeyboardMarkup {
+func (kbd *Keyboard) toTelegram() apix.ReplyKeyboardMarkup {
 	rows := [][]apix.KeyboardButton{}
 	for _, row := range kbd.Rows {
 		buttons := []apix.KeyboardButton{}
@@ -43,12 +51,12 @@ func (kbd *Keyboard) ToTelegram() apix.ReplyKeyboardMarkup {
 			buttons = append(buttons, button.ToTelegram())
 		}
 		rows = append(rows, buttons)
-	} 
-	
+	}
+
 	return apix.NewReplyKeyboard(rows...)
 }
 
-func (kbd *Keyboard) ToTelegramInline() apix.InlineKeyboardMarkup {
+func (kbd *Keyboard) toTelegramInline() apix.InlineKeyboardMarkup {
 	rows := [][]apix.InlineKeyboardButton{}
 	for _, row := range kbd.Rows {
 		buttons := []apix.InlineKeyboardButton{}
@@ -56,8 +64,8 @@ func (kbd *Keyboard) ToTelegramInline() apix.InlineKeyboardMarkup {
 			buttons = append(buttons, button.ToTelegramInline())
 		}
 		rows = append(rows, buttons)
-	} 
-	
+	}
+
 	return apix.NewInlineKeyboardMarkup(rows...)
 }
 
@@ -69,7 +77,6 @@ func (kbd *Keyboard) buttonMap() ButtonMap {
 			ret[vj.Key()] = vj
 		}
 	}
-	
+
 	return ret
 }
-

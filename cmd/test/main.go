@@ -1,111 +1,65 @@
 package main
 
 import (
-    "log"
-    "os"
+	"log"
+	"os"
 
-    //tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-    "boteval/src/behx"
+	"github.com/mojosa-software/got/src/tx"
 )
 
-var rootKbd = behx.NewKeyboard(
-	behx.NewButtonRow(
-		behx.NewButton(
-			"Increment",
-			behx.NewCustomAction(func(c *behx.Context){
-				counter := c.V["counter"].(*int)
-				*counter++
-				c.Sendf("%d", *counter)
-			}),
-		),
-		behx.NewButton(
-			"Decrement",
-			behx.NewCustomAction(func(c *behx.Context){
-				counter := c.V["counter"].(*int)
-				*counter--
-				c.Sendf("%d", *counter)
-			}),
-		),
-	),
-	behx.NewButtonRow(
-		behx.NewButton("To second screen",  behx.NewScreenChange("second")),
-	),
+var navKeyboard = tx.NewKeyboard("nav").Row(
+	tx.NewButton().WithText("Inc/Dec").ScreenChange("inc/dec"),
+).Row(
+	tx.NewButton().WithText("Upper case").ScreenChange("upper-case"),
+	tx.NewButton().WithText("Lower case").ScreenChange("lower-case"),
 )
 
-var secondKbd = behx.NewKeyboard(
-	behx.NewButtonRow(
-		behx.NewButton(
-			"❤",
-			behx.NewScreenChange("start"),
-		),
-	),
-)
-
-var inlineKbd = behx.NewKeyboard(
-	behx.NewButtonRow(
-		behx.NewButton(
-			"INLINE PRESS ME",
-			behx.NewCustomAction(func(c *behx.Context){
-				log.Println("INLINE pressed the button!")
-			}),
-		),
-		behx.NewButton("INLINE PRESS ME 2", behx.NewCustomAction(func(c *behx.Context){
-			log.Println("INLINE pressed another button!")
-		})),
-	),
-	behx.NewButtonRow(
-		behx.NewButton(
-			"INLINE PRESS ME 3",
-			behx.ScreenChange("second"),
-		),
-	),
-)
-
-
-var startScreen = behx.NewScreen(
-	"Hello, World!",
-	"inline",
-	"root",
-)
-
-var secondScreen = behx.NewScreen(
-	"Second screen!",
-	"",
-	"second",
-)
-
-var behaviour = behx.NewBehaviour(
-	behx.NewCustomAction(func(c *behx.Context){
-		// This way we provide counter for EACH user.
-		c.V["counter"] = new(int)
-		
-		// Do NOT forget to change to some of the screens
-		// since they are the ones who provide behaviour
-		// definition.
-		c.ChangeScreen("start")
+var incKeyboard = tx.NewKeyboard("inc/dec").Row(
+	tx.NewButton().WithText("+").ActionFunc(func(c *tx.Context) {
+		counter := c.V["counter"].(*int)
+		*counter++
+		c.Sendf("%d", *counter)
 	}),
-	behx.ScreenMap{
-		"start": startScreen,
-		"second": secondScreen,
-	},
-	behx.KeyboardMap{
-		"root": rootKbd,
-		"inline": inlineKbd,
-		"second": secondKbd,
-	},
+	tx.NewButton().WithText("-").ActionFunc(func(c *tx.Context) {
+		counter := c.V["counter"].(*int)
+		*counter--
+		c.Sendf("%d", *counter)
+	}),
+)
+
+var startScreen = tx.NewScreen("start").
+	WithText("The bot started!").
+	Keyboard("nav")
+
+var incScreen = tx.NewScreen("inc/dec").
+	WithText("The screen shows how user separated data works").
+	IKeyboard("inc/dec").
+	Keyboard("nav")
+
+var beh = tx.NewBehaviour().
+	OnStartFunc(func(c *tx.Context) {
+		// The function will be called every time
+		// the bot is started.
+		c.V["counter"] = new(int)
+		c.ChangeScreen("start")
+	}).WithKeyboards(
+	navKeyboard,
+	incKeyboard,
+).WithScreens(
+	startScreen,
+	incScreen,
 )
 
 func main() {
 	token := os.Getenv("BOT_TOKEN")
-	
-    bot, err := behx.NewBot(token, behaviour, nil)
-    if err != nil {
-        log.Panic(err)
-    }
 
-    bot.Debug = true
+	bot, err := tx.NewBot(token, beh, nil)
+	if err != nil {
+		log.Panic(err)
+	}
 
-    log.Printf("Authorized on account %s", bot.Self.UserName)
-    bot.Run()
+	bot.Debug = true
+
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+	bot.Run()
 }
-

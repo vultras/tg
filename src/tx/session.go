@@ -1,4 +1,4 @@
-package behx
+package tx
 
 import (
 	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -21,20 +21,20 @@ type Session struct {
 	PreviousScreenId ScreenId
 	// The currently showed on display keyboard.
 	KeyboardId KeyboardId
-	
+
 	// Custom data for each user.
-	V map[string] any
+	V map[string]any
 }
 
 // The type represents map of sessions using
 // as key.
-type SessionMap map[SessionId] *Session
+type SessionMap map[SessionId]*Session
 
-// Return new empty session with 
+// Return new empty session with
 func NewSession(id SessionId) *Session {
 	return &Session{
 		Id: id,
-		V: make(map[string] any),
+		V:  make(map[string]any),
 	}
 }
 
