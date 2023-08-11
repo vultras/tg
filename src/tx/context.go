@@ -10,9 +10,10 @@ import (
 // handling functions. Is provided to Act() function always.
 type Context struct {
 	*Session
-	B         *Bot
-	updates   chan *Update
-	available bool
+	B             *Bot
+	updates       chan *Update
+	available     bool
+	availableChan chan bool
 }
 
 // Goroutie function to handle each user.
@@ -39,7 +40,7 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 
 			// Sending wrong messages to
 			// the currently reading goroutine.
-			if !ok && c.ReadingUpdate {
+			if !ok && c.readingUpdate {
 				c.updates <- u
 				continue
 			}
@@ -64,7 +65,6 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 }
 
 func (c *Context) run(a Action) {
-	c.available = true
 	go a.Act(c)
 }
 
@@ -89,7 +89,9 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	c.Session.ChangeScreen(screenId)
 	c.KeyboardId = screen.KeyboardId
 
-	c.available = false
+	if c.readingUpdate {
+		c.updates <- nil
+	}
 	if screen.Action != nil {
 		c.run(screen.Action)
 	}
@@ -99,22 +101,14 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 
 // Returns the next update ignoring current screen.
 func (c *Context) ReadUpdate() (*Update, error) {
-	var (
-		u *Update
-	)
-	c.ReadingUpdate = true
-	for {
-		select {
-		case u = <-c.updates:
-			c.ReadingUpdate = false
-			return u, nil
-		default:
-			if !c.available {
-				return nil, NotAvailableErr
-			}
-		}
+	c.readingUpdate = true
+	u := <-c.updates
+	c.readingUpdate = false
+	if u == nil {
+		return nil, NotAvailableErr
 	}
 
+	return u, nil
 }
 
 // Returns the next text message that the user sends.

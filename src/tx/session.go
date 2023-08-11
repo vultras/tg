@@ -23,7 +23,7 @@ type Session struct {
 	KeyboardId KeyboardId
 
 	// Is true if currently reading the Update.
-	ReadingUpdate bool
+	readingUpdate bool
 
 	// Custom data for each user.
 	V map[string]any
