@@ -44,10 +44,7 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 				continue
 			}
 
-			if !ok {
-			}
-
-			if ok {
+			if ok && btn.Action != nil {
 				c.run(btn.Action)
 			}
 		} else if u.CallbackQuery != nil {

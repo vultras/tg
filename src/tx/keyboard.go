@@ -38,12 +38,16 @@ func NewKeyboard(id KeyboardId) *Keyboard {
 
 // Adds a new button row to the current keyboard.
 func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
+	// For empty row. We do not need that.
+	if len(btns) < 1 {
+		return kbd
+	}
 	kbd.Rows = append(kbd.Rows, btns)
 	return kbd
 }
 
 // Convert the Keyboard to the Telegram API type.
-func (kbd *Keyboard) toTelegram() apix.ReplyKeyboardMarkup {
+func (kbd *Keyboard) ToTelegram() apix.ReplyKeyboardMarkup {
 	rows := [][]apix.KeyboardButton{}
 	for _, row := range kbd.Rows {
 		buttons := []apix.KeyboardButton{}
@@ -56,7 +60,7 @@ func (kbd *Keyboard) toTelegram() apix.ReplyKeyboardMarkup {
 	return apix.NewReplyKeyboard(rows...)
 }
 
-func (kbd *Keyboard) toTelegramInline() apix.InlineKeyboardMarkup {
+func (kbd *Keyboard) ToTelegramInline() apix.InlineKeyboardMarkup {
 	rows := [][]apix.InlineKeyboardButton{}
 	for _, row := range kbd.Rows {
 		buttons := []apix.InlineKeyboardButton{}

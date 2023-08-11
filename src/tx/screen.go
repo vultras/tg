@@ -80,7 +80,7 @@ func (s *Screen) Render(c *Context) error {
 		if !ok {
 			return KeyboardNotExistErr
 		}
-		msg.ReplyMarkup = kbd.toTelegramInline()
+		msg.ReplyMarkup = kbd.ToTelegramInline()
 	}
 
 	_, err := c.B.Send(msg)
@@ -101,7 +101,7 @@ func (s *Screen) Render(c *Context) error {
 			if !ok {
 				return KeyboardNotExistErr
 			}
-			tkbd = kbd.toTelegram()
+			tkbd = kbd.ToTelegram()
 		}
 
 		msg.ReplyMarkup = tkbd
