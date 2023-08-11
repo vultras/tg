@@ -19,8 +19,11 @@ type Session struct {
 	CurrentScreenId ScreenId
 	// ID of the previous screen.
 	PreviousScreenId ScreenId
-	// The currently showed on display keyboard.
+	// The currently showed on display keyboard inside Action.
 	KeyboardId KeyboardId
+
+	// Is true if currently reading the Update.
+	ReadingUpdate bool
 
 	// Custom data for each user.
 	V map[string]any

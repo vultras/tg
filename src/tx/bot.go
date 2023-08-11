@@ -61,6 +61,7 @@ func (bot *Bot) Run() error {
 					ctx := &Context{
 						B:       bot,
 						Session: session,
+						updates: make(chan *Update),
 					}
 
 					chn := make(chan *Update)

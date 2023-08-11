@@ -24,6 +24,9 @@ type Screen struct {
 
 	// Keyboard to be displayed on the screen.
 	KeyboardId KeyboardId
+
+	// Action called on the reaching the screen.
+	Action Action
 }
 
 // Map structure for the screens.
@@ -50,6 +53,15 @@ func (s *Screen) IKeyboard(kbdId KeyboardId) *Screen {
 func (s *Screen) Keyboard(kbdId KeyboardId) *Screen {
 	s.KeyboardId = kbdId
 	return s
+}
+
+func (s *Screen) WithAction(a Action) *Screen {
+	s.Action = a
+	return s
+}
+
+func (s *Screen) ActionFunc(a ActionFunc) *Screen {
+	return s.WithAction(a)
 }
 
 // Rendering the screen text to string to be sent or printed.

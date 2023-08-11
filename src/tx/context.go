@@ -10,17 +10,19 @@ import (
 // handling functions. Is provided to Act() function always.
 type Context struct {
 	*Session
-	B *Bot
+	B         *Bot
+	updates   chan *Update
+	available bool
 }
 
 // Goroutie function to handle each user.
-func (ctx *Context) handleUpdateChan(updates chan *Update) {
-	bot := ctx.B
-	session := ctx.Session
-	bot.Start.Act(ctx)
+func (c *Context) handleUpdateChan(updates chan *Update) {
+	bot := c.B
+	session := c.Session
+	bot.Start.Act(c)
 	for u := range updates {
 		screen := bot.Screens[session.CurrentScreenId]
-
+		// The part is added to implement custom update handling.
 		if u.Message != nil {
 
 			kbd := bot.Keyboards[screen.KeyboardId]
@@ -28,12 +30,26 @@ func (ctx *Context) handleUpdateChan(updates chan *Update) {
 			text := u.Message.Text
 			btn, ok := btns[text]
 
-			// Skipping wrong text messages.
-			if !ok {
+			/*if ok {
+				c.available = false
+				btn.Action.Act(c)
+				c.available = true
+				continue
+			}*/
+
+			// Sending wrong messages to
+			// the currently reading goroutine.
+			if !ok && c.ReadingUpdate {
+				c.updates <- u
 				continue
 			}
 
-			btn.Action.Act(ctx)
+			if !ok {
+			}
+
+			if ok {
+				c.run(btn.Action)
+			}
 		} else if u.CallbackQuery != nil {
 			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
 			data := u.CallbackQuery.Data
@@ -45,9 +61,18 @@ func (ctx *Context) handleUpdateChan(updates chan *Update) {
 			kbd := bot.Keyboards[screen.InlineKeyboardId]
 			btns := kbd.buttonMap()
 			btn := btns[data]
-			btn.Action.Act(ctx)
+			btn.Action.Act(c)
 		}
 	}
+}
+
+func (c *Context) run(a Action) {
+	c.available = true
+	go a.Act(c)
+}
+
+func (c *Context) Available() bool {
+	return c.available
 }
 
 // Changes screen of user to the Id one.
@@ -67,16 +92,55 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	c.Session.ChangeScreen(screenId)
 	c.KeyboardId = screen.KeyboardId
 
+	c.available = false
+	if screen.Action != nil {
+		c.run(screen.Action)
+	}
+
 	return nil
 }
 
+// Returns the next update ignoring current screen.
+func (c *Context) ReadUpdate() (*Update, error) {
+	var (
+		u *Update
+	)
+	c.ReadingUpdate = true
+	for {
+		select {
+		case u = <-c.updates:
+			c.ReadingUpdate = false
+			return u, nil
+		default:
+			if !c.available {
+				return nil, NotAvailableErr
+			}
+		}
+	}
+
+}
+
+// Returns the next text message that the user sends.
+func (c *Context) ReadTextMessage() (string, error) {
+	u, err := c.ReadUpdate()
+	if err != nil {
+		return "", err
+	}
+	if u.Message == nil {
+		return "", WrongUpdateType{}
+	}
+
+	return u.Message.Text, nil
+}
+
 // Sends to the user specified text.
-func (c *Context) Send(text string) error {
-	msg := apix.NewMessage(c.Id.ToTelegram(), text)
+func (c *Context) Send(v ...any) error {
+	msg := apix.NewMessage(c.Id.ToTelegram(), fmt.Sprint(v...))
 	_, err := c.B.Send(msg)
 	return err
 }
 
+// Sends the formatted with fmt.Sprintf message to the user.
 func (c *Context) Sendf(format string, v ...any) error {
 	return c.Send(fmt.Sprintf(format, v...))
 }
