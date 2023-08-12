@@ -13,7 +13,6 @@ type SessionId int64
 // The type represents current state of
 // user interaction per each of them.
 type Session struct {
-	// Unique identifier for the session, Telegram chat's ID.
 	Id SessionId
 	// Current screen identifier.
 	CurrentScreenId ScreenId
@@ -21,23 +20,36 @@ type Session struct {
 	PreviousScreenId ScreenId
 	// The currently showed on display keyboard inside Action.
 	KeyboardId KeyboardId
-
-	// Is true if currently reading the Update.
-	readingUpdate bool
-
-	// Custom data for each user.
-	V map[string]any
+	V          any
 }
 
 // The type represents map of sessions using
 // as key.
 type SessionMap map[SessionId]*Session
 
-// Return new empty session with
+// Session information for a group.
+type GroupSession struct {
+	Id SessionId
+	// Information for each user in the group.
+	V map[SessionId]any
+}
+
+// Map for every user in every chat sessions.
+type GroupSessionMap map[SessionId]*GroupSession
+
+// Return new empty session with specified user ID.
 func NewSession(id SessionId) *Session {
 	return &Session{
 		Id: id,
 		V:  make(map[string]any),
+	}
+}
+
+// Returns new empty group session with specified group and user IDs.
+func NewGroupSession(id SessionId) *GroupSession {
+	return &GroupSession{
+		Id: id,
+		V:  make(map[SessionId]any),
 	}
 }
 

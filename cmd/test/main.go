@@ -8,6 +8,10 @@ import (
 	"github.com/mojosa-software/got/src/tx"
 )
 
+type UserData struct {
+	Counter int
+}
+
 var startScreenButton = tx.NewButton().
 	WithText("🏠 To the start screen").
 	ScreenChange("start")
@@ -17,21 +21,21 @@ var beh = tx.NewBehaviour().
 	// The function will be called every time
 	// the bot is started.
 	OnStartFunc(func(c *tx.Context) {
-		c.V["counter"] = new(int)
+		c.V = &UserData{}
 		c.ChangeScreen("start")
 	}).WithKeyboards(
 
 	// Increment/decrement keyboard.
 	tx.NewKeyboard("inc/dec").Row(
 		tx.NewButton().WithText("+").ActionFunc(func(c *tx.Context) {
-			counter := c.V["counter"].(*int)
-			*counter++
-			c.Sendf("%d", *counter)
+			d := c.V.(*UserData)
+			d.Counter++
+			c.Sendf("%d", d.Counter)
 		}),
 		tx.NewButton().WithText("-").ActionFunc(func(c *tx.Context) {
-			counter := c.V["counter"].(*int)
-			*counter--
-			c.Sendf("%d", *counter)
+			d := c.V.(*UserData)
+			d.Counter--
+			c.Sendf("%d", d.Counter)
 		}),
 	).Row(
 		startScreenButton,
@@ -67,16 +71,16 @@ var beh = tx.NewBehaviour().
 
 	tx.NewScreen("inc/dec").
 		WithText(
-			"The screen shows how"+
-				"user separated data works"+
-				"by saving the counter for each of users"+
-				"separately.",
+			"The screen shows how "+
+				"user separated data works "+
+				"by saving the counter for each of users "+
+				"separately. ",
 		).
 		Keyboard("inc/dec").
 		// The function will be called when reaching the screen.
 		ActionFunc(func(c *tx.Context) {
-			counter := c.V["counter"].(*int)
-			c.Sendf("Current counter value = %d", *counter)
+			d := c.V.(*UserData)
+			c.Sendf("Current counter value = %d", d.Counter)
 		}),
 
 	tx.NewScreen("upper-case").
@@ -88,6 +92,22 @@ var beh = tx.NewBehaviour().
 		WithText("Type text and the bot will send you the lower case version").
 		Keyboard("nav-start").
 		ActionFunc(mutateMessage(strings.ToLower)),
+).WithCommands(
+	tx.NewCommand("hello").
+		Desc("sends the 'Hello, World!' message back").
+		ActionFunc(func(c *tx.Context) {
+			c.Send("Hello, World!")
+		}),
+	tx.NewCommand("read").
+		Desc("reads a string and sends it back").
+		ActionFunc(func(c *tx.Context) {
+			c.Send("Type some text:")
+			msg, err := c.ReadTextMessage()
+			if err != nil {
+				return
+			}
+			c.Sendf("You typed %q", msg)
+		}),
 )
 
 func mutateMessage(fn func(string) string) tx.ActionFunc {

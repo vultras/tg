@@ -10,10 +10,17 @@ import (
 // handling functions. Is provided to Act() function always.
 type Context struct {
 	*Session
-	B             *Bot
-	updates       chan *Update
-	available     bool
-	availableChan chan bool
+	B       *Bot
+	updates chan *Update
+
+	// Is true if currently reading the Update.
+	readingUpdate bool
+}
+
+// Context for interaction inside groups.
+type GroupContext struct {
+	*GroupSession
+	B *Bot
 }
 
 // Goroutie function to handle each user.
@@ -25,28 +32,33 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 		screen := bot.Screens[session.CurrentScreenId]
 		// The part is added to implement custom update handling.
 		if u.Message != nil {
+			var act Action
+			if u.Message.IsCommand() && !c.readingUpdate {
+				cmdName := CommandName(u.Message.Command())
+				cmd, ok := bot.Behaviour.Commands[cmdName]
+				if ok {
+					act = cmd.Action
+				} else {
+				}
+			} else {
+				kbd := bot.Keyboards[screen.KeyboardId]
+				btns := kbd.buttonMap()
+				text := u.Message.Text
+				btn, ok := btns[text]
+				// Sending wrong messages to
+				// the currently reading goroutine.
+				if !ok && c.readingUpdate {
+					c.updates <- u
+					continue
+				}
 
-			kbd := bot.Keyboards[screen.KeyboardId]
-			btns := kbd.buttonMap()
-			text := u.Message.Text
-			btn, ok := btns[text]
-
-			/*if ok {
-				c.available = false
-				btn.Action.Act(c)
-				c.available = true
-				continue
-			}*/
-
-			// Sending wrong messages to
-			// the currently reading goroutine.
-			if !ok && c.readingUpdate {
-				c.updates <- u
-				continue
+				if ok {
+					act = btn.Action
+				}
 			}
 
-			if ok && btn.Action != nil {
-				c.run(btn.Action)
+			if act != nil {
+				c.run(act)
 			}
 		} else if u.CallbackQuery != nil {
 			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
@@ -68,10 +80,6 @@ func (c *Context) run(a Action) {
 	go a.Act(c)
 }
 
-func (c *Context) Available() bool {
-	return c.available
-}
-
 // Changes screen of user to the Id one.
 func (c *Context) ChangeScreen(screenId ScreenId) error {
 	// Return if it will not change anything.
@@ -83,15 +91,17 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 		return ScreenNotExistErr
 	}
 
+	// Stop the reading by sending the nil.
+	if c.readingUpdate {
+		c.updates <- nil
+	}
+
 	screen := c.B.Screens[screenId]
 	screen.Render(c)
 
 	c.Session.ChangeScreen(screenId)
 	c.KeyboardId = screen.KeyboardId
 
-	if c.readingUpdate {
-		c.updates <- nil
-	}
 	if screen.Action != nil {
 		c.run(screen.Action)
 	}

@@ -45,22 +45,6 @@ func (btn *Button) ScreenChange(sc ScreenChange) *Button {
 	return btn.WithAction(sc)
 }
 
-func NewButtonData(text string, data string, action Action) *Button {
-	return &Button{
-		Text:   text,
-		Data:   data,
-		Action: action,
-	}
-}
-
-func NewButtonUrl(text string, url string, action Action) *Button {
-	return &Button{
-		Text:   text,
-		Url:    url,
-		Action: action,
-	}
-}
-
 func (btn *Button) ToTelegram() apix.KeyboardButton {
 	return apix.NewKeyboardButton(btn.Text)
 }

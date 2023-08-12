@@ -3,11 +3,24 @@ package tx
 // The package implements
 // behaviour for the Telegram bots.
 
-// The type describes behaviour for the bot.
+// The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
 	Start     Action
 	Screens   ScreenMap
 	Keyboards KeyboardMap
+	Commands  CommandMap
+}
+
+// The type describes behaviour for the bot in group chats.
+type GroupBehaviour struct {
+	// Will be called on adding the bot to the group.
+	//Add GroupAction
+	// List of commands
+	Commands CommandMap
+}
+
+// The type describes behaviour for the bot in channels.
+type ChannelBehaviour struct {
 }
 
 // Returns new empty behaviour.
@@ -15,6 +28,7 @@ func NewBehaviour() *Behaviour {
 	return &Behaviour{
 		Screens:   make(ScreenMap),
 		Keyboards: make(KeyboardMap),
+		Commands:  make(CommandMap),
 	}
 }
 
@@ -68,6 +82,36 @@ func (b *Behaviour) WithScreens(
 	}
 	return b
 }
+
+// The function sets commands.
+func (b *Behaviour) WithCommands(cmds ...*Command) *Behaviour {
+	for _, cmd := range cmds {
+		if cmd.Name == "" {
+			panic("empty command name")
+		}
+		_, ok := b.Commands[cmd.Name]
+		if ok {
+			panic("duplicate command definition")
+		}
+		b.Commands[cmd.Name] = cmd
+	}
+	return b
+}
+
+// The function sets group commands.
+/*func (b *Behaviour) WithGroupCommands(cmds ...*Command) *Behaviour {
+	for _, cmd := range cmds {
+		if cmd.Name == "" {
+			panic("empty group command name")
+		}
+		_, ok := b.GroupCommands[cmd.Name]
+		if ok {
+			panic("duplicate group command definition")
+		}
+		b.GroupCommands[cmd.Name] = cmd
+	}
+	return b
+}*/
 
 // Check whether the screen exists in the behaviour.
 func (beh *Behaviour) ScreenExist(id ScreenId) bool {
