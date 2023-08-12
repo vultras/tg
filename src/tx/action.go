@@ -25,6 +25,19 @@ type Action interface {
 	Act(*Arg)
 }
 
+type JsonTyper interface {
+	JsonType() string
+}
+
+type JsonAction struct {
+	Type   string
+	Action Action
+}
+
+func (ja JsonAction) UnmarshalJSON(bts []byte, ptr any) error {
+	return nil
+}
+
 // Customized action for the bot.
 type ActionFunc func(*Arg)
 

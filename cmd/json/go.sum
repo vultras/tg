@@ -1,0 +1,6 @@
+github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 h1:wG8n/XJQ07TmjbITcGiUaOtXxdrINDz1b0J1w0SzqDc=
+github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1/go.mod h1:A2S0CWkNylc2phvKXWBBdD3K0iGnDBGbzRpISP2zBl8=
+github.com/mojosa-software/goscript v0.0.0-20230626091305-86a004b7769c h1:y7RQZz/zJDARRJkn4szD8N2rK6K9NU1vUNPwahtW5zw=
+github.com/mojosa-software/goscript v0.0.0-20230626091305-86a004b7769c/go.mod h1:LtBn7lQTgA/TMEL8Y+dGkD6XWHV2gxRPZXiqCZt3HRc=
+github.com/mojosa-software/got v0.0.0-20230812125405-bbe076f29abe h1:k42GTLSdShyzNC2BAuIwg6FV3ShwMt/42ezBJWCxVgI=
+github.com/mojosa-software/got v0.0.0-20230812125405-bbe076f29abe/go.mod h1:eNRBO08YxKEj75u65VRCDpMGCgZ1sqPN6pi6aFdkfK8=
