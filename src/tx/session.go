@@ -1,11 +1,5 @@
 package tx
 
-import (
-	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-)
-
-type Update = apix.Update
-
 // Represents unique value to identify chats.
 // In fact is simply ID of the chat.
 type SessionId int64

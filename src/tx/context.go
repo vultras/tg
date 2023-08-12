@@ -27,7 +27,7 @@ type GroupContext struct {
 func (c *Context) handleUpdateChan(updates chan *Update) {
 	bot := c.B
 	session := c.Session
-	bot.Start.Act(c)
+	c.run(bot.Start, nil)
 	for u := range updates {
 		screen := bot.Screens[session.CurrentScreenId]
 		// The part is added to implement custom update handling.
@@ -45,11 +45,20 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 				btns := kbd.buttonMap()
 				text := u.Message.Text
 				btn, ok := btns[text]
-				// Sending wrong messages to
-				// the currently reading goroutine.
-				if !ok && c.readingUpdate {
-					c.updates <- u
-					continue
+				if !ok {
+					if u.Message.Location != nil {
+						for _, b := range btns {
+							if b.SendLocation {
+								btn = b
+								ok = true
+							}
+						}
+					} else if c.readingUpdate {
+						// Skipping the update sending it to
+						// the reading goroutine.
+						c.updates <- u
+						continue
+					}
 				}
 
 				if ok {
@@ -58,7 +67,7 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 			}
 
 			if act != nil {
-				c.run(act)
+				c.run(act, u)
 			}
 		} else if u.CallbackQuery != nil {
 			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
@@ -70,18 +79,22 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 			}
 			kbd := bot.Keyboards[screen.InlineKeyboardId]
 			btns := kbd.buttonMap()
-			btn := btns[data]
-			btn.Action.Act(c)
+			btn, ok := btns[data]
+			if !ok && c.readingUpdate {
+				c.updates <- u
+				continue
+			}
+			c.run(btn.Action, u)
 		}
 	}
 }
 
-func (c *Context) run(a Action) {
-	go a.Act(c)
+func (c *Context) run(a Action, u *Update) {
+	go a.Act(&A{c, u})
 }
 
 // Changes screen of user to the Id one.
-func (c *Context) ChangeScreen(screenId ScreenId) error {
+func (c *Arg) ChangeScreen(screenId ScreenId) error {
 	// Return if it will not change anything.
 	if c.CurrentScreenId == screenId {
 		return nil
@@ -97,13 +110,13 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	}
 
 	screen := c.B.Screens[screenId]
-	screen.Render(c)
+	screen.Render(c.Context)
 
 	c.Session.ChangeScreen(screenId)
 	c.KeyboardId = screen.KeyboardId
 
 	if screen.Action != nil {
-		c.run(screen.Action)
+		c.run(screen.Action, c.U)
 	}
 
 	return nil
