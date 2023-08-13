@@ -7,28 +7,14 @@ import (
 )
 
 type Message = apix.Message
-
 type CommandName string
-
-type CommandContext struct {
-	// The field declares way to interact with the group chat in
-	// general.
-	*Context
-	Message *Message
-}
-
-type CommandMap map[CommandName]*Command
-
-type CommandHandlerFunc func(*CommandContext)
-type CommandHandler interface {
-	Run(*Context)
-}
 
 type Command struct {
 	Name        CommandName
 	Description string
 	Action      Action
 }
+type CommandMap map[CommandName]*Command
 
 func NewCommand(name CommandName) *Command {
 	return &Command{
@@ -48,4 +34,31 @@ func (c *Command) ActionFunc(af ActionFunc) *Command {
 func (c *Command) Desc(desc string) *Command {
 	c.Description = desc
 	return c
+}
+
+type GroupCommand struct {
+	Name        CommandName
+	Description string
+	Action      GroupAction
+}
+type GroupCommandMap map[CommandName]*GroupCommand
+
+func NewGroupCommand(name CommandName) *GroupCommand {
+	return &GroupCommand{
+		Name: name,
+	}
+}
+
+func (cmd *GroupCommand) WithAction(a GroupAction) *GroupCommand {
+	cmd.Action = a
+	return cmd
+}
+
+func (cmd *GroupCommand) ActionFunc(fn GroupActionFunc) *GroupCommand {
+	return cmd.WithAction(fn)
+}
+
+func (cmd *GroupCommand) Desc(desc string) *GroupCommand {
+	cmd.Description = desc
+	return cmd
 }

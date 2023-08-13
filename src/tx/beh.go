@@ -3,24 +3,16 @@ package tx
 // The package implements
 // behaviour for the Telegram bots.
 
+// The type describes behaviour for the bot in channels.
+type ChannelBehaviour struct {
+}
+
 // The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
 	Start     Action
 	Screens   ScreenMap
 	Keyboards KeyboardMap
 	Commands  CommandMap
-}
-
-// The type describes behaviour for the bot in group chats.
-type GroupBehaviour struct {
-	// Will be called on adding the bot to the group.
-	//Add GroupAction
-	// List of commands
-	Commands CommandMap
-}
-
-// The type describes behaviour for the bot in channels.
-type ChannelBehaviour struct {
 }
 
 // Returns new empty behaviour.
@@ -127,4 +119,42 @@ func (beh *Behaviour) GetScreen(id ScreenId) *Screen {
 
 	screen := beh.Screens[id]
 	return screen
+}
+
+// The type describes behaviour for the bot in group chats.
+type GroupBehaviour struct {
+	Init GroupAction
+	// List of commands
+	Commands GroupCommandMap
+}
+
+func NewGroupBehaviour() *GroupBehaviour {
+	return &GroupBehaviour{
+		Commands: make(GroupCommandMap),
+	}
+}
+
+func (b *GroupBehaviour) WithInitAction(a GroupAction) *GroupBehaviour {
+	b.Init = a
+	return b
+}
+
+func (b *GroupBehaviour) InitFunc(fn GroupActionFunc) *GroupBehaviour {
+	return b.WithInitAction(fn)
+}
+
+func (b *GroupBehaviour) WithCommands(
+	cmds ...*GroupCommand,
+) *GroupBehaviour {
+	for _, cmd := range cmds {
+		if cmd.Name == "" {
+			panic("empty command name")
+		}
+		_, ok := b.Commands[cmd.Name]
+		if ok {
+			panic("duplicate command definition")
+		}
+		b.Commands[cmd.Name] = cmd
+	}
+	return b
 }

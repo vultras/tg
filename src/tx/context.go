@@ -17,31 +17,26 @@ type Context struct {
 	readingUpdate bool
 }
 
-// Context for interaction inside groups.
-type GroupContext struct {
-	*GroupSession
-	B *Bot
-}
-
 // Goroutie function to handle each user.
 func (c *Context) handleUpdateChan(updates chan *Update) {
+	var act Action
 	bot := c.B
 	session := c.Session
-	c.run(bot.Start, nil)
+	beh := bot.behaviour
+	c.run(beh.Start, nil)
 	for u := range updates {
-		screen := bot.Screens[session.CurrentScreenId]
+		screen := bot.behaviour.Screens[session.CurrentScreenId]
 		// The part is added to implement custom update handling.
 		if u.Message != nil {
-			var act Action
 			if u.Message.IsCommand() && !c.readingUpdate {
 				cmdName := CommandName(u.Message.Command())
-				cmd, ok := bot.Behaviour.Commands[cmdName]
+				cmd, ok := beh.Commands[cmdName]
 				if ok {
 					act = cmd.Action
 				} else {
 				}
 			} else {
-				kbd := bot.Keyboards[screen.KeyboardId]
+				kbd := beh.Keyboards[screen.KeyboardId]
 				btns := kbd.buttonMap()
 				text := u.Message.Text
 				btn, ok := btns[text]
@@ -65,10 +60,6 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 					act = btn.Action
 				}
 			}
-
-			if act != nil {
-				c.run(act, u)
-			}
 		} else if u.CallbackQuery != nil {
 			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
 			data := u.CallbackQuery.Data
@@ -77,49 +68,26 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 			if err != nil {
 				panic(err)
 			}
-			kbd := bot.Keyboards[screen.InlineKeyboardId]
+			kbd := beh.Keyboards[screen.InlineKeyboardId]
 			btns := kbd.buttonMap()
 			btn, ok := btns[data]
 			if !ok && c.readingUpdate {
 				c.updates <- u
 				continue
 			}
-			c.run(btn.Action, u)
+			act = btn.Action
+		}
+		if act != nil {
+			c.run(act, u)
 		}
 	}
 }
 
 func (c *Context) run(a Action, u *Update) {
-	go a.Act(&A{c, u})
-}
-
-// Changes screen of user to the Id one.
-func (c *Arg) ChangeScreen(screenId ScreenId) error {
-	// Return if it will not change anything.
-	if c.CurrentScreenId == screenId {
-		return nil
-	}
-
-	if !c.B.ScreenExist(screenId) {
-		return ScreenNotExistErr
-	}
-
-	// Stop the reading by sending the nil.
-	if c.readingUpdate {
-		c.updates <- nil
-	}
-
-	screen := c.B.Screens[screenId]
-	screen.Render(c.Context)
-
-	c.Session.ChangeScreen(screenId)
-	c.KeyboardId = screen.KeyboardId
-
-	if screen.Action != nil {
-		c.run(screen.Action, c.U)
-	}
-
-	return nil
+	go a.Act(&A{
+		Context: c,
+		U:       u,
+	})
 }
 
 // Returns the next update ignoring current screen.
@@ -157,4 +125,57 @@ func (c *Context) Send(v ...any) error {
 // Sends the formatted with fmt.Sprintf message to the user.
 func (c *Context) Sendf(format string, v ...any) error {
 	return c.Send(fmt.Sprintf(format, v...))
+}
+
+// Context for interaction inside groups.
+type GroupContext struct {
+	*GroupSession
+	B       *Bot
+	updates chan *Update
+}
+
+func (c *GroupContext) run(a GroupAction, u *Update) {
+	go a.Act(&GA{
+		GroupContext: c,
+		Update:       u,
+	})
+}
+
+func (c *GroupContext) handleUpdateChan(updates chan *Update) {
+	var act GroupAction
+	beh := c.B.groupBehaviour
+	for u := range updates {
+		if u.Message != nil {
+			msg := u.Message
+			if msg.IsCommand() {
+				cmdName := CommandName(msg.Command())
+
+				// Skipping the commands sent not to us.
+				atName := msg.CommandWithAt()[len(cmdName)+1:]
+				if c.B.Me.UserName != atName {
+					continue
+				}
+				cmd, ok := beh.Commands[cmdName]
+				if !ok {
+					// Some lack of command handling
+					continue
+				}
+				act = cmd.Action
+			}
+		}
+		if act != nil {
+			c.run(act, u)
+		}
+	}
+}
+
+func (c *GroupContext) Sendf(format string, v ...any) error {
+	return c.Send(fmt.Sprintf(format, v...))
+}
+
+// Sends into the chat specified values converted to strings.
+func (c *GroupContext) Send(v ...any) error {
+	msg := apix.NewMessage(c.Id.ToTelegram(), fmt.Sprint(v...))
+	_, err := c.B.Send(msg)
+	return err
 }

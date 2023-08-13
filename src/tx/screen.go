@@ -76,7 +76,7 @@ func (s *Screen) Render(c *Context) error {
 	msg := apix.NewMessage(id, s.Text.String())
 
 	if s.InlineKeyboardId != "" {
-		kbd, ok := c.B.Keyboards[s.InlineKeyboardId]
+		kbd, ok := c.B.behaviour.Keyboards[s.InlineKeyboardId]
 		if !ok {
 			return KeyboardNotExistErr
 		}
@@ -97,7 +97,7 @@ func (s *Screen) Render(c *Context) error {
 
 		// Replace keyboard with the new one.
 		if s.KeyboardId != "" {
-			kbd, ok := c.B.Keyboards[s.KeyboardId]
+			kbd, ok := c.B.behaviour.Keyboards[s.KeyboardId]
 			if !ok {
 				return KeyboardNotExistErr
 			}

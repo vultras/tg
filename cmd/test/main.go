@@ -150,13 +150,29 @@ func mutateMessage(fn func(string) string) tx.ActionFunc {
 	}
 }
 
+var gBeh = tx.NewGroupBehaviour().
+	InitFunc(func(a *tx.GA) {
+	}).
+	WithCommands(
+		tx.NewGroupCommand("hello").ActionFunc(func(a *tx.GA) {
+			a.Send("Hello, World!")
+		}),
+		tx.NewGroupCommand("mycounter").ActionFunc(func(a *tx.GA) {
+			d := a.GetSessionValue().(*UserData)
+			a.Sendf("Your counter value is %d", d.Counter)
+		}),
+	)
+
 func main() {
 	token := os.Getenv("BOT_TOKEN")
 
-	bot, err := tx.NewBot(token, beh, nil)
+	bot, err := tx.NewBot(token)
 	if err != nil {
 		log.Panic(err)
 	}
+	bot = bot.
+		WithBehaviour(beh).
+		WithGroupBehaviour(gBeh)
 
 	bot.Debug = true
 

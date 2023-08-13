@@ -4,6 +4,11 @@ package tx
 // In fact is simply ID of the chat.
 type SessionId int64
 
+// Convert the SessionId to Telegram API's type.
+func (si SessionId) ToTelegram() int64 {
+	return int64(si)
+}
+
 // The type represents current state of
 // user interaction per each of them.
 type Session struct {
@@ -17,26 +22,34 @@ type Session struct {
 	V          any
 }
 
-// The type represents map of sessions using
-// as key.
-type SessionMap map[SessionId]*Session
-
-// Session information for a group.
-type GroupSession struct {
-	Id SessionId
-	// Information for each user in the group.
-	V map[SessionId]any
-}
-
-// Map for every user in every chat sessions.
-type GroupSessionMap map[SessionId]*GroupSession
-
 // Return new empty session with specified user ID.
 func NewSession(id SessionId) *Session {
 	return &Session{
 		Id: id,
 		V:  make(map[string]any),
 	}
+}
+
+// Changes screen of user to the Id one for the session.
+func (c *Session) ChangeScreen(screenId ScreenId) {
+	c.PreviousScreenId = c.CurrentScreenId
+	c.CurrentScreenId = screenId
+}
+
+// The type represents map of sessions using
+// as key.
+type SessionMap map[SessionId]*Session
+
+// Add new empty session by it's ID.
+func (sm SessionMap) Add(sid SessionId) {
+	sm[sid] = NewSession(sid)
+}
+
+// Session information for a group.
+type GroupSession struct {
+	Id SessionId
+	// Information for each user in the group.
+	V map[SessionId]any
 }
 
 // Returns new empty group session with specified group and user IDs.
@@ -47,18 +60,9 @@ func NewGroupSession(id SessionId) *GroupSession {
 	}
 }
 
-// Changes screen of user to the Id one for the session.
-func (c *Session) ChangeScreen(screenId ScreenId) {
-	c.PreviousScreenId = c.CurrentScreenId
-	c.CurrentScreenId = screenId
-}
+// Map for every group the bot is in.
+type GroupSessionMap map[SessionId]*GroupSession
 
-// Convert the SessionId to Telegram API's type.
-func (si SessionId) ToTelegram() int64 {
-	return int64(si)
-}
-
-// Add new empty session by it's ID.
-func (sm SessionMap) Add(sid SessionId) {
-	sm[sid] = NewSession(sid)
+func (sm GroupSessionMap) Add(sid SessionId) {
+	sm[sid] = NewGroupSession(sid)
 }
