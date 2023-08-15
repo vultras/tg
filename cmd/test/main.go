@@ -12,20 +12,11 @@ type UserData struct {
 	Counter int
 }
 
-var startScreenButton = tx.NewButton("🏠 To the start screen").
-	ScreenChange("start")
+var (
+	startScreenButton = tx.NewButton("🏠 To the start screen").
+				ScreenChange("start")
 
-var beh = tx.NewBehaviour().
-
-	// The function will be called every time
-	// the bot is started.
-	OnStartFunc(func(c *tx.A) {
-		c.V = &UserData{}
-		c.ChangeScreen("start")
-	}).WithKeyboards(
-
-	// Increment/decrement keyboard.
-	tx.NewKeyboard("inc/dec").Row(
+	incDecKeyboard = tx.NewKeyboard("").Row(
 		tx.NewButton("+").ActionFunc(func(c *tx.A) {
 			d := c.V.(*UserData)
 			d.Counter++
@@ -38,49 +29,60 @@ var beh = tx.NewBehaviour().
 		}),
 	).Row(
 		startScreenButton,
-	),
+	)
 
-	// The navigational keyboard.
-	tx.NewKeyboard("nav").Row(
-		tx.NewButton("Inc/Dec").ScreenChange("inc/dec"),
-	).Row(
+	navKeyboard = tx.NewKeyboard("Choose your interest").
+			WithOneTime(true).
+			Row(
+			tx.NewButton("Inc/Dec").ScreenChange("inc/dec"),
+		).Row(
 		tx.NewButton("Upper case").ScreenChange("upper-case"),
 		tx.NewButton("Lower case").ScreenChange("lower-case"),
 	).Row(
-		tx.NewButton("Send location").
-			WithSendLocation(true).
-			ActionFunc(func(c *tx.A) {
-				var err error
-				if c.U.Message.Location != nil {
-					l := c.U.Message.Location
-					err = c.Sendf(
-						"Longitude: %f\n"+
-							"Latitude: %f\n"+
-							"Heading: %d"+
-							"",
-						l.Longitude,
-						l.Latitude,
-						l.Heading,
-					)
-				} else {
-					err = c.Send("Somehow wrong location was sent")
-				}
-				if err != nil {
-					c.Send(err)
-				}
-			}),
-	),
+		tx.NewButton("Send location").ScreenChange("send-location"),
+	)
 
-	tx.NewKeyboard("istart").Row(
-		tx.NewButton("GoT Github page").
-			WithUrl("https://github.com/mojosa-software/got"),
-	),
+	sendLocationKeyboard = tx.NewKeyboard("Press the button to send your location").
+				Row(
+			tx.NewButton("Send location").
+				WithSendLocation(true).
+				ActionFunc(func(c *tx.A) {
+					var err error
+					if c.U.Message.Location != nil {
+						l := c.U.Message.Location
+						err = c.Sendf(
+							"Longitude: %f\n"+
+								"Latitude: %f\n"+
+								"Heading: %d"+
+								"",
+							l.Longitude,
+							l.Latitude,
+							l.Heading,
+						)
+					} else {
+						err = c.Send("Somehow wrong location was sent")
+					}
+					if err != nil {
+						c.Send(err)
+					}
+				}),
+		).Row(
+		startScreenButton,
+	)
 
 	// The keyboard to return to the start screen.
-	tx.NewKeyboard("nav-start").Row(
+	navToStartKeyboard = tx.NewKeyboard("").Row(
 		startScreenButton,
-	),
-).WithScreens(
+	)
+)
+
+var beh = tx.NewBehaviour().
+	OnStartFunc(func(c *tx.A) {
+		// The function will be called every time
+		// the bot is started.
+		c.V = &UserData{}
+		c.ChangeScreen("start")
+	}).WithScreens(
 	tx.NewScreen("start").
 		WithText(
 			"The bot started!"+
@@ -88,8 +90,14 @@ var beh = tx.NewBehaviour().
 				" understand of how the API works, so just"+
 				" horse around a bit to guess everything out"+
 				" by yourself!",
-		).Keyboard("nav").
-		IKeyboard("istart"),
+		).WithKeyboard(navKeyboard).
+		// The inline keyboard with link to GitHub page.
+		WithIKeyboard(
+			tx.NewKeyboard("istart").Row(
+				tx.NewButton("GoT Github page").
+					WithUrl("https://github.com/mojosa-software/got"),
+			),
+		),
 
 	tx.NewScreen("inc/dec").
 		WithText(
@@ -98,7 +106,7 @@ var beh = tx.NewBehaviour().
 				"by saving the counter for each of users "+
 				"separately. ",
 		).
-		Keyboard("inc/dec").
+		WithKeyboard(incDecKeyboard).
 		// The function will be called when reaching the screen.
 		ActionFunc(func(c *tx.A) {
 			d := c.V.(*UserData)
@@ -107,13 +115,27 @@ var beh = tx.NewBehaviour().
 
 	tx.NewScreen("upper-case").
 		WithText("Type text and the bot will send you the upper case version to you").
-		Keyboard("nav-start").
+		WithKeyboard(navToStartKeyboard).
 		ActionFunc(mutateMessage(strings.ToUpper)),
 
 	tx.NewScreen("lower-case").
 		WithText("Type text and the bot will send you the lower case version").
-		Keyboard("nav-start").
+		WithKeyboard(navToStartKeyboard).
 		ActionFunc(mutateMessage(strings.ToLower)),
+
+	tx.NewScreen("send-location").
+		WithText("Send your location and I will tell where you are!").
+		WithKeyboard(sendLocationKeyboard).
+		WithIKeyboard(
+			tx.NewKeyboard("").Row(
+				tx.NewButton("Check").
+					WithData("check").
+					ActionFunc(func(a *tx.A) {
+						d := a.V.(*UserData)
+						a.Sendf("Counter = %d", d.Counter)
+					}),
+			),
+		),
 ).WithCommands(
 	tx.NewCommand("hello").
 		Desc("sends the 'Hello, World!' message back").

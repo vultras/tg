@@ -10,10 +10,11 @@ type WrongUpdateType struct {
 }
 
 var (
-	ScreenNotExistErr   = errors.New("screen does not exist")
-	SessionNotExistErr  = errors.New("session does not exist")
-	KeyboardNotExistErr = errors.New("keyboard does not exist")
-	NotAvailableErr     = errors.New("the context is not available")
+	ScreenNotExistErr    = errors.New("screen does not exist")
+	SessionNotExistErr   = errors.New("session does not exist")
+	KeyboardNotExistErr  = errors.New("keyboard does not exist")
+	NotAvailableErr      = errors.New("the context is not available")
+	EmptyKeyboardTextErr = errors.New("got empty text for a keyboard")
 )
 
 func (wut WrongUpdateType) Error() string {

@@ -48,26 +48,23 @@ type A = Arg
 
 // Changes screen of user to the Id one.
 func (c *Arg) ChangeScreen(screenId ScreenId) error {
-	// Return if it will not change anything.
-	if c.CurrentScreenId == screenId {
-		return nil
-	}
-
 	if !c.B.behaviour.ScreenExist(screenId) {
 		return ScreenNotExistErr
 	}
 
-	// Stop the reading by sending the nil.
+	// Stop the reading by sending the nil,
+	// since we change the screen and
+	// current goroutine needs to be stopped.
 	if c.readingUpdate {
 		c.updates <- nil
 	}
 
+	// Getting the screen and changing to
+	// then executing its action.
 	screen := c.B.behaviour.Screens[screenId]
+	c.prevScreen = c.curScreen
+	c.curScreen = screen
 	screen.Render(c.Context)
-
-	c.Session.ChangeScreen(screenId)
-	c.KeyboardId = screen.KeyboardId
-
 	if screen.Action != nil {
 		c.run(screen.Action, c.U)
 	}

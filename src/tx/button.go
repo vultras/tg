@@ -38,6 +38,11 @@ func (btn *Button) WithAction(a Action) *Button {
 	return btn
 }
 
+func (btn *Button) WithData(dat string) *Button {
+	btn.Data = dat
+	return btn
+}
+
 // Sets whether the button must send owner's location.
 func (btn *Button) WithSendLocation(ok bool) *Button {
 	btn.SendLocation = ok

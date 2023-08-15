@@ -12,14 +12,10 @@ func (si SessionId) ToTelegram() int64 {
 // The type represents current state of
 // user interaction per each of them.
 type Session struct {
+	// Id of the chat of the user.
 	Id SessionId
-	// Current screen identifier.
-	CurrentScreenId ScreenId
-	// ID of the previous screen.
-	PreviousScreenId ScreenId
-	// The currently showed on display keyboard inside Action.
-	KeyboardId KeyboardId
-	V          any
+	// Custom value for each user.
+	V any
 }
 
 // Return new empty session with specified user ID.
@@ -28,12 +24,6 @@ func NewSession(id SessionId) *Session {
 		Id: id,
 		V:  make(map[string]any),
 	}
-}
-
-// Changes screen of user to the Id one for the session.
-func (c *Session) ChangeScreen(screenId ScreenId) {
-	c.PreviousScreenId = c.CurrentScreenId
-	c.CurrentScreenId = screenId
 }
 
 // The type represents map of sessions using

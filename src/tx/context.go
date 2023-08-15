@@ -12,20 +12,20 @@ type Context struct {
 	*Session
 	B       *Bot
 	updates chan *Update
-
 	// Is true if currently reading the Update.
 	readingUpdate bool
+
+	curScreen, prevScreen *Screen
 }
 
 // Goroutie function to handle each user.
 func (c *Context) handleUpdateChan(updates chan *Update) {
 	var act Action
 	bot := c.B
-	session := c.Session
 	beh := bot.behaviour
 	c.run(beh.Start, nil)
 	for u := range updates {
-		screen := bot.behaviour.Screens[session.CurrentScreenId]
+		screen := c.curScreen
 		// The part is added to implement custom update handling.
 		if u.Message != nil {
 			if u.Message.IsCommand() && !c.readingUpdate {
@@ -36,7 +36,13 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 				} else {
 				}
 			} else {
-				kbd := beh.Keyboards[screen.KeyboardId]
+				kbd := screen.Keyboard
+				if kbd == nil {
+					if c.readingUpdate {
+						c.updates <- u
+					}
+					continue
+				}
 				btns := kbd.buttonMap()
 				text := u.Message.Text
 				btn, ok := btns[text]
@@ -68,11 +74,22 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 			if err != nil {
 				panic(err)
 			}
-			kbd := beh.Keyboards[screen.InlineKeyboardId]
+			kbd := screen.InlineKeyboard
+			if kbd == nil {
+				if c.readingUpdate {
+					c.updates <- u
+				}
+				continue
+			}
+
 			btns := kbd.buttonMap()
 			btn, ok := btns[data]
 			if !ok && c.readingUpdate {
 				c.updates <- u
+				continue
+			}
+			if !ok {
+				c.Sendf("%q", btns)
 				continue
 			}
 			act = btn.Action

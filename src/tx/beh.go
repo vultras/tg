@@ -3,10 +3,6 @@ package tx
 // The package implements
 // behaviour for the Telegram bots.
 
-// The type describes behaviour for the bot in channels.
-type ChannelBehaviour struct {
-}
-
 // The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
 	Start     Action
@@ -33,29 +29,6 @@ func (b *Behaviour) OnStartFunc(
 	fn ActionFunc,
 ) *Behaviour {
 	return b.WithStart(fn)
-}
-
-func (b *Behaviour) OnStartChangeScreen(
-	id ScreenId,
-) *Behaviour {
-	return b.WithStart(ScreenChange(id))
-}
-
-// The function sets keyboards.
-func (b *Behaviour) WithKeyboards(
-	kbds ...*Keyboard,
-) *Behaviour {
-	for _, kbd := range kbds {
-		if kbd.Id == "" {
-			panic("empty keyboard ID")
-		}
-		_, ok := b.Keyboards[kbd.Id]
-		if ok {
-			panic("duplicate keyboard IDs")
-		}
-		b.Keyboards[kbd.Id] = kbd
-	}
-	return b
 }
 
 // The function sets screens.
@@ -90,21 +63,6 @@ func (b *Behaviour) WithCommands(cmds ...*Command) *Behaviour {
 	return b
 }
 
-// The function sets group commands.
-/*func (b *Behaviour) WithGroupCommands(cmds ...*Command) *Behaviour {
-	for _, cmd := range cmds {
-		if cmd.Name == "" {
-			panic("empty group command name")
-		}
-		_, ok := b.GroupCommands[cmd.Name]
-		if ok {
-			panic("duplicate group command definition")
-		}
-		b.GroupCommands[cmd.Name] = cmd
-	}
-	return b
-}*/
-
 // Check whether the screen exists in the behaviour.
 func (beh *Behaviour) ScreenExist(id ScreenId) bool {
 	_, ok := beh.Screens[id]
@@ -128,21 +86,27 @@ type GroupBehaviour struct {
 	Commands GroupCommandMap
 }
 
+// Returns new empty group behaviour object.
 func NewGroupBehaviour() *GroupBehaviour {
 	return &GroupBehaviour{
 		Commands: make(GroupCommandMap),
 	}
 }
 
+// Sets an Action for initialization on each group connected to the
+// group bot.
 func (b *GroupBehaviour) WithInitAction(a GroupAction) *GroupBehaviour {
 	b.Init = a
 	return b
 }
 
+// The method reciveies a function to be called on initialization of the
+// bot group bot.
 func (b *GroupBehaviour) InitFunc(fn GroupActionFunc) *GroupBehaviour {
 	return b.WithInitAction(fn)
 }
 
+// The method sets group commands.
 func (b *GroupBehaviour) WithCommands(
 	cmds ...*GroupCommand,
 ) *GroupBehaviour {
@@ -157,4 +121,8 @@ func (b *GroupBehaviour) WithCommands(
 		b.Commands[cmd.Name] = cmd
 	}
 	return b
+}
+
+// The type describes behaviour for the bot in channels.
+type ChannelBehaviour struct {
 }

@@ -23,17 +23,31 @@ type KeyboardId string
 // The type represents reply keyboard which
 // is supposed to be showed on a Screen.
 type Keyboard struct {
-	Id   KeyboardId
+	// Text to be displayed with the keyboard.
+	Text string
+	// Rows to be displayed once the
+	// keyboard is sent.
 	Rows []ButtonRow
+
+	OneTime bool
+	Inline  bool
 }
 
 type KeyboardMap map[KeyboardId]*Keyboard
 
 // Return the new reply keyboard with rows as specified.
-func NewKeyboard(id KeyboardId) *Keyboard {
+func NewKeyboard(text string) *Keyboard {
 	return &Keyboard{
-		Id: id,
+		Text: text,
 	}
+}
+
+func (kbd *Keyboard) TelegramMarkup() any {
+	if kbd.Inline {
+		return kbd.toTelegramInline()
+	}
+
+	return kbd.toTelegramReply()
 }
 
 // Adds a new button row to the current keyboard.
@@ -46,8 +60,8 @@ func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
 	return kbd
 }
 
-// Convert the Keyboard to the Telegram API type.
-func (kbd *Keyboard) ToTelegram() apix.ReplyKeyboardMarkup {
+// Convert the Keyboard to the Telegram API type of reply keyboard.
+func (kbd *Keyboard) toTelegramReply() apix.ReplyKeyboardMarkup {
 	rows := [][]apix.KeyboardButton{}
 	for _, row := range kbd.Rows {
 		buttons := []apix.KeyboardButton{}
@@ -57,10 +71,14 @@ func (kbd *Keyboard) ToTelegram() apix.ReplyKeyboardMarkup {
 		rows = append(rows, buttons)
 	}
 
+	if kbd.OneTime {
+		return apix.NewOneTimeReplyKeyboard(rows...)
+	}
+
 	return apix.NewReplyKeyboard(rows...)
 }
 
-func (kbd *Keyboard) ToTelegramInline() apix.InlineKeyboardMarkup {
+func (kbd *Keyboard) toTelegramInline() apix.InlineKeyboardMarkup {
 	rows := [][]apix.InlineKeyboardButton{}
 	for _, row := range kbd.Rows {
 		buttons := []apix.InlineKeyboardButton{}
@@ -71,6 +89,16 @@ func (kbd *Keyboard) ToTelegramInline() apix.InlineKeyboardMarkup {
 	}
 
 	return apix.NewInlineKeyboardMarkup(rows...)
+}
+
+func (kbd *Keyboard) WithOneTime(oneTime bool) *Keyboard {
+	kbd.OneTime = oneTime
+	return kbd
+}
+
+func (kbd *Keyboard) WithInline(inline bool) *Keyboard {
+	kbd.Inline = inline
+	return kbd
 }
 
 // Returns the map of buttons. Used to define the Action.

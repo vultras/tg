@@ -7,24 +7,17 @@ import (
 // Unique identifier for the screen.
 type ScreenId string
 
-// Should be replaced with something that can be
-// dinamicaly rendered. (WIP)
-type ScreenText string
-
 // Screen statement of the bot.
 // Mostly what buttons to show.
 type Screen struct {
 	Id ScreenId
-
-	// Text to be sent to the user when changing to the screen.
-	Text ScreenText
-
+	// The text to be displayed when the screen is
+	// reached.
+	Text string
 	// The keyboard to be sent in the message part.
-	InlineKeyboardId KeyboardId
-
+	InlineKeyboard *Keyboard
 	// Keyboard to be displayed on the screen.
-	KeyboardId KeyboardId
-
+	Keyboard *Keyboard
 	// Action called on the reaching the screen.
 	Action Action
 }
@@ -40,18 +33,22 @@ func NewScreen(id ScreenId) *Screen {
 }
 
 // Returns the screen with specified text printing on appearing.
-func (s *Screen) WithText(text ScreenText) *Screen {
+func (s *Screen) WithText(text string) *Screen {
 	s.Text = text
 	return s
 }
 
-func (s *Screen) IKeyboard(kbdId KeyboardId) *Screen {
-	s.InlineKeyboardId = kbdId
+func (s *Screen) WithInlineKeyboard(ikbd *Keyboard) *Screen {
+	s.InlineKeyboard = ikbd
 	return s
 }
 
-func (s *Screen) Keyboard(kbdId KeyboardId) *Screen {
-	s.KeyboardId = kbdId
+func (s *Screen) WithIKeyboard(ikbd *Keyboard) *Screen {
+	return s.WithInlineKeyboard(ikbd)
+}
+
+func (s *Screen) WithKeyboard(kbd *Keyboard) *Screen {
+	s.Keyboard = kbd
 	return s
 }
 
@@ -64,49 +61,69 @@ func (s *Screen) ActionFunc(a ActionFunc) *Screen {
 	return s.WithAction(a)
 }
 
-// Rendering the screen text to string to be sent or printed.
-func (st ScreenText) String() string {
-	return string(st)
-}
-
 // Renders output of the screen only to the side of the user.
 func (s *Screen) Render(c *Context) error {
 	id := c.Id.ToTelegram()
+	kbd := s.Keyboard
+	iKbd := s.InlineKeyboard
 
-	msg := apix.NewMessage(id, s.Text.String())
+	var ch [2]apix.Chattable
+	var txt string
 
-	if s.InlineKeyboardId != "" {
-		kbd, ok := c.B.behaviour.Keyboards[s.InlineKeyboardId]
-		if !ok {
-			return KeyboardNotExistErr
+	// Screen text and inline keyboard.
+	if s.Text != "" {
+		txt = s.Text
+	} else if iKbd != nil {
+		if iKbd.Text != "" {
+			txt = iKbd.Text
+		} else {
+			// Default to send the keyboard.
+			txt = ">"
 		}
-		msg.ReplyMarkup = kbd.ToTelegramInline()
 	}
-
-	_, err := c.B.Send(msg)
-	if err != nil {
-		return err
-	}
-
-	msg = apix.NewMessage(id, ">")
-	// Checking if we need to resend the keyboard.
-	if s.KeyboardId != c.KeyboardId {
-		// Remove keyboard by default.
-		var tkbd any
-		tkbd = apix.NewRemoveKeyboard(true)
-
-		// Replace keyboard with the new one.
-		if s.KeyboardId != "" {
-			kbd, ok := c.B.behaviour.Keyboards[s.KeyboardId]
-			if !ok {
-				return KeyboardNotExistErr
+	if txt != "" {
+		msg := apix.NewMessage(id, txt)
+		if iKbd != nil {
+			msg.ReplyMarkup = iKbd.toTelegramInline()
+		} else if kbd != nil {
+			msg.ReplyMarkup = kbd.toTelegramReply()
+			if _, err := c.B.Send(msg); err != nil {
+				return err
 			}
-			tkbd = kbd.ToTelegram()
+			return nil
+		} else {
+			msg.ReplyMarkup = apix.NewRemoveKeyboard(true)
+			if _, err := c.B.Send(msg); err != nil {
+				return err
+			}
+			return nil
 		}
+		ch[0] = msg
+	}
 
-		msg.ReplyMarkup = tkbd
-		if _, err := c.B.Send(msg); err != nil {
-			return err
+	// Screen text and reply keyboard.
+	txt = ""
+	if kbd != nil {
+		if kbd.Text != "" {
+			txt = kbd.Text
+		} else {
+			txt = ">"
+		}
+		msg := apix.NewMessage(id, txt)
+		msg.ReplyMarkup = kbd.toTelegramReply()
+		ch[1] = msg
+	} else {
+		// Removing keyboard if there is none.
+		msg := apix.NewMessage(id, ">")
+		msg.ReplyMarkup = apix.NewRemoveKeyboard(true)
+		ch[1] = msg
+	}
+
+	for _, m := range ch {
+		if m != nil {
+			if _, err := c.B.Send(m); err != nil {
+				return err
+			}
 		}
 	}
 
