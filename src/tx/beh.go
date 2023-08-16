@@ -5,7 +5,7 @@ package tx
 
 // The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
-	Start     Action
+	Init      *action
 	Screens   ScreenMap
 	Keyboards KeyboardMap
 	Commands  CommandMap
@@ -20,15 +20,17 @@ func NewBehaviour() *Behaviour {
 	}
 }
 
-func (b *Behaviour) WithStart(a Action) *Behaviour {
-	b.Start = a
+// The Action will be called on session creation,
+// not when starting or restarting the bot with the Start Action.
+func (b *Behaviour) WithInit(a Action) *Behaviour {
+	b.Init = newAction(a)
 	return b
 }
 
-func (b *Behaviour) OnStartFunc(
+func (b *Behaviour) WithInitFunc(
 	fn ActionFunc,
 ) *Behaviour {
-	return b.WithStart(fn)
+	return b.WithInit(fn)
 }
 
 // The function sets screens.

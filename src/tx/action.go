@@ -1,16 +1,42 @@
 package tx
 
-//apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	"reflect"
+)
 
+// Jsonable Action.
+type action struct {
+	Type   string
+	Action Action
+}
+
+func newAction(a Action) *action {
+	typ, ok := actionMapByReflect[reflect.TypeOf(a)]
+	if !ok {
+		panic(ActionNotDefinedErr)
+	}
+
+	return &action{
+		Type:   typ,
+		Action: a,
+	}
+}
+
+func (a *action) Act(arg *A) {
+	if a.Action != nil {
+		a.Action.Act(arg)
+	}
+}
+
+// Customized actions for the bot.
 type Action interface {
 	Act(*Arg)
 }
 
+// Customized actions for the
 type GroupAction interface {
 	Act(*GroupArg)
 }
-
-// Customized actions for the bot.
 
 type ActionFunc func(*Arg)
 
@@ -98,13 +124,4 @@ type ChannelAction struct {
 
 type JsonTyper interface {
 	JsonType() string
-}
-
-type JsonAction struct {
-	Type   string
-	Action Action
-}
-
-func (ja JsonAction) UnmarshalJSON(bts []byte, ptr any) error {
-	return nil
 }

@@ -77,11 +77,11 @@ var (
 )
 
 var beh = tx.NewBehaviour().
-	OnStartFunc(func(c *tx.A) {
-		// The function will be called every time
-		// the bot is started.
+	WithInitFunc(func(c *tx.A) {
+		// The session initialization.
 		c.V = &UserData{}
 		c.ChangeScreen("start")
+
 	}).WithScreens(
 	tx.NewScreen("start").
 		WithText(

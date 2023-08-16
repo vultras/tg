@@ -1,8 +1,6 @@
 package tx
 
 import (
-	//"fmt"
-
 	"errors"
 
 	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -119,35 +117,36 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 	chans := make(map[SessionId]chan *Update)
 	var sid SessionId
 	for u := range updates {
-		if u.Message != nil {
-			// Create new session if the one does not exist
-			// for this user.
-			sid = SessionId(u.Message.Chat.ID)
-			if _, ok := bot.sessions[sid]; !ok {
-				bot.sessions.Add(sid)
-			}
+		sid = SessionId(u.FromChat().ID)
+		var sessionOk, chnOk bool
+		// Create new session if the one does not exist
+		// for this user.
+		if _, sessionOk = bot.sessions[sid]; !sessionOk {
+			bot.sessions.Add(sid)
+		}
 
-			// The "start" command resets the bot
-			// by executing the Start Action.
-			if u.Message.IsCommand() {
-				cmdName := CommandName(u.Message.Command())
-				if cmdName == "start" {
-					// Getting current session and context.
-					session := bot.sessions[sid]
-					ctx := &Context{
-						B:       bot,
-						Session: session,
-						updates: make(chan *Update),
-					}
+		_, chnOk = chans[sid]
+		// Making the bot ignore anything except "start"
+		// before the session started
+		if u.Message.IsCommand() &&
+			(!sessionOk) {
+			cmdName := CommandName(u.Message.Command())
+			if cmdName == "start" {
+				session := bot.sessions[sid]
+				ctx := &Context{
+					B:       bot,
+					Session: session,
+					updates: make(chan *Update),
+				}
 
+				// Starting the new goroutine if
+				// there is no one.
+				if !chnOk {
 					chn := make(chan *Update)
 					chans[sid] = chn
-					// Starting the goroutine for the user.
 					go ctx.handleUpdateChan(chn)
 				}
 			}
-		} else if u.CallbackQuery != nil {
-			sid = SessionId(u.CallbackQuery.Message.Chat.ID)
 		}
 		chn, ok := chans[sid]
 		// The bot MUST get the "start" command.

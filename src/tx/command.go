@@ -12,7 +12,7 @@ type CommandName string
 type Command struct {
 	Name        CommandName
 	Description string
-	Action      Action
+	Action      *action
 }
 type CommandMap map[CommandName]*Command
 
@@ -23,7 +23,7 @@ func NewCommand(name CommandName) *Command {
 }
 
 func (c *Command) WithAction(a Action) *Command {
-	c.Action = a
+	c.Action = newAction(a)
 	return c
 }
 

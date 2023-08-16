@@ -10,7 +10,7 @@ type Button struct {
 	Data         string
 	Url          string
 	SendLocation bool
-	Action       Action
+	Action       *action
 }
 
 type ButtonMap map[string]*Button
@@ -34,7 +34,7 @@ func (btn *Button) WithUrl(url string) *Button {
 // Set the action when pressing the button.
 // By default is nil and does nothing.
 func (btn *Button) WithAction(a Action) *Button {
-	btn.Action = a
+	btn.Action = newAction(a)
 	return btn
 }
 

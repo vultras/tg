@@ -19,7 +19,7 @@ type Screen struct {
 	// Keyboard to be displayed on the screen.
 	Keyboard *Keyboard
 	// Action called on the reaching the screen.
-	Action Action
+	Action *action
 }
 
 // Map structure for the screens.
@@ -53,7 +53,7 @@ func (s *Screen) WithKeyboard(kbd *Keyboard) *Screen {
 }
 
 func (s *Screen) WithAction(a Action) *Screen {
-	s.Action = a
+	s.Action = newAction(a)
 	return s
 }
 

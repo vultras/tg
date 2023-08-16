@@ -15,6 +15,7 @@ var (
 	KeyboardNotExistErr  = errors.New("keyboard does not exist")
 	NotAvailableErr      = errors.New("the context is not available")
 	EmptyKeyboardTextErr = errors.New("got empty text for a keyboard")
+	ActionNotDefinedErr  = errors.New("action was not defined")
 )
 
 func (wut WrongUpdateType) Error() string {

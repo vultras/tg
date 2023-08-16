@@ -23,7 +23,10 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 	var act Action
 	bot := c.B
 	beh := bot.behaviour
-	c.run(beh.Start, nil)
+
+	if beh.Init != nil {
+		c.run(beh.Init, nil)
+	}
 	for u := range updates {
 		screen := c.curScreen
 		// The part is added to implement custom update handling.
