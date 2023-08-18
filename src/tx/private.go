@@ -57,3 +57,8 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 
 	return nil
 }
+
+func (c *Context) SessionValue() any {
+	v, _ := c.SessionValueBySid(c.Id)
+	return v
+}

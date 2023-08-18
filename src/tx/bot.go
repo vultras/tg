@@ -36,7 +36,7 @@ func NewBot(token string) (*Bot, error) {
 	}, nil
 }
 
-func (bot *Bot) GetSessionValueBySid(
+func (bot *Bot) SessionValueBySid(
 	sid SessionId,
 ) (any, bool) {
 	v, ok := bot.sessions[sid]

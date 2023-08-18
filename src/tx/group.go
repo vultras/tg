@@ -18,8 +18,8 @@ func (c *GroupContext) SentFromSid() SessionId {
 	return SessionId(c.SentFrom().ID)
 }
 
-func (a *GroupContext) GetSessionValue() any {
-	v, _ := a.Bot.GetSessionValueBySid(a.SentFromSid())
+func (a *GroupContext) SessionValue() any {
+	v, _ := a.Bot.SessionValueBySid(a.SentFromSid())
 	return v
 }
 

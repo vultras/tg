@@ -21,13 +21,13 @@ type context struct {
 
 // Goroutie function to handle each user.
 func (c *context) handleUpdateChan(updates chan *Update) {
-	var act Action
 	beh := c.behaviour
 
 	if beh.Init != nil {
 		c.run(beh.Init, nil)
 	}
 	for u := range updates {
+		var act Action
 		screen := c.curScreen
 		// The part is added to implement custom update handling.
 		if u.Message != nil {
@@ -70,7 +70,10 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 				}
 			}
 		} else if u.CallbackQuery != nil {
-			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
+			cb := apix.NewCallback(
+				u.CallbackQuery.ID,
+				u.CallbackQuery.Data,
+			)
 			data := u.CallbackQuery.Data
 
 			_, err := c.Request(cb)

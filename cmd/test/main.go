@@ -23,7 +23,7 @@ var (
 			c.Sendf("%d", d.Counter)
 		}),
 		tx.NewButton("-").ActionFunc(func(c *tx.Context) {
-			d := c.V.(*UserData)
+			d := c.SessionValue().(*UserData)
 			d.Counter--
 			c.Sendf("%d", d.Counter)
 		}),
@@ -48,9 +48,8 @@ var (
 				WithSendLocation(true).
 				ActionFunc(func(c *tx.Context) {
 					var err error
-					u := c.Update
-					if u.Message.Location != nil {
-						l := u.Message.Location
+					if c.Message.Location != nil {
+						l := c.Message.Location
 						err = c.Sendf(
 							"Longitude: %f\n"+
 								"Latitude: %f\n"+
@@ -181,7 +180,7 @@ var gBeh = tx.NewGroupBehaviour().
 			c.Send("Hello, World!")
 		}),
 		tx.NewGroupCommand("mycounter").ActionFunc(func(c *tx.GC) {
-			d := c.GetSessionValue().(*UserData)
+			d := c.SessionValue().(*UserData)
 			c.Sendf("Your counter value is %d", d.Counter)
 		}),
 	)
