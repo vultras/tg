@@ -6,11 +6,9 @@ import (
 	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// The type represents way to interact with user in
-// handling functions. Is provided to Act() function always.
-type Context struct {
+type context struct {
 	*Session
-	B       *Bot
+	*Bot
 	updates chan *Update
 	// Is true if currently reading the Update.
 	readingUpdate bool
@@ -18,11 +16,13 @@ type Context struct {
 	curScreen, prevScreen *Screen
 }
 
+// The type represents way to interact with user in
+// handling functions. Is provided to Act() function always.
+
 // Goroutie function to handle each user.
-func (c *Context) handleUpdateChan(updates chan *Update) {
+func (c *context) handleUpdateChan(updates chan *Update) {
 	var act Action
-	bot := c.B
-	beh := bot.behaviour
+	beh := c.behaviour
 
 	if beh.Init != nil {
 		c.run(beh.Init, nil)
@@ -73,7 +73,7 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 			cb := apix.NewCallback(u.CallbackQuery.ID, u.CallbackQuery.Data)
 			data := u.CallbackQuery.Data
 
-			_, err := bot.Request(cb)
+			_, err := c.Request(cb)
 			if err != nil {
 				panic(err)
 			}
@@ -103,15 +103,15 @@ func (c *Context) handleUpdateChan(updates chan *Update) {
 	}
 }
 
-func (c *Context) run(a Action, u *Update) {
-	go a.Act(&A{
-		Context: c,
-		U:       u,
+func (c *context) run(a Action, u *Update) {
+	go a.Act(&Context{
+		context: c,
+		Update:  u,
 	})
 }
 
 // Returns the next update ignoring current screen.
-func (c *Context) ReadUpdate() (*Update, error) {
+func (c *context) ReadUpdate() (*Update, error) {
 	c.readingUpdate = true
 	u := <-c.updates
 	c.readingUpdate = false
@@ -123,7 +123,7 @@ func (c *Context) ReadUpdate() (*Update, error) {
 }
 
 // Returns the next text message that the user sends.
-func (c *Context) ReadTextMessage() (string, error) {
+func (c *context) ReadTextMessage() (string, error) {
 	u, err := c.ReadUpdate()
 	if err != nil {
 		return "", err
@@ -136,34 +136,34 @@ func (c *Context) ReadTextMessage() (string, error) {
 }
 
 // Sends to the user specified text.
-func (c *Context) Send(v ...any) error {
+func (c *context) Send(v ...any) error {
 	msg := apix.NewMessage(c.Id.ToTelegram(), fmt.Sprint(v...))
-	_, err := c.B.Send(msg)
+	_, err := c.Bot.Send(msg)
 	return err
 }
 
 // Sends the formatted with fmt.Sprintf message to the user.
-func (c *Context) Sendf(format string, v ...any) error {
+func (c *context) Sendf(format string, v ...any) error {
 	return c.Send(fmt.Sprintf(format, v...))
 }
 
 // Context for interaction inside groups.
-type GroupContext struct {
+type groupContext struct {
 	*GroupSession
-	B       *Bot
+	*Bot
 	updates chan *Update
 }
 
-func (c *GroupContext) run(a GroupAction, u *Update) {
-	go a.Act(&GA{
-		GroupContext: c,
+func (c *groupContext) run(a GroupAction, u *Update) {
+	go a.Act(&GroupContext{
+		groupContext: c,
 		Update:       u,
 	})
 }
 
-func (c *GroupContext) handleUpdateChan(updates chan *Update) {
+func (c *groupContext) handleUpdateChan(updates chan *Update) {
 	var act GroupAction
-	beh := c.B.groupBehaviour
+	beh := c.groupBehaviour
 	for u := range updates {
 		if u.Message != nil {
 			msg := u.Message
@@ -172,7 +172,7 @@ func (c *GroupContext) handleUpdateChan(updates chan *Update) {
 
 				// Skipping the commands sent not to us.
 				atName := msg.CommandWithAt()[len(cmdName)+1:]
-				if c.B.Me.UserName != atName {
+				if c.Bot.Me.UserName != atName {
 					continue
 				}
 				cmd, ok := beh.Commands[cmdName]
@@ -189,13 +189,13 @@ func (c *GroupContext) handleUpdateChan(updates chan *Update) {
 	}
 }
 
-func (c *GroupContext) Sendf(format string, v ...any) error {
+func (c *groupContext) Sendf(format string, v ...any) error {
 	return c.Send(fmt.Sprintf(format, v...))
 }
 
 // Sends into the chat specified values converted to strings.
-func (c *GroupContext) Send(v ...any) error {
+func (c *groupContext) Send(v ...any) error {
 	msg := apix.NewMessage(c.Id.ToTelegram(), fmt.Sprint(v...))
-	_, err := c.B.Send(msg)
+	_, err := c.Bot.Send(msg)
 	return err
 }

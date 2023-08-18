@@ -62,7 +62,7 @@ func (s *Screen) ActionFunc(a ActionFunc) *Screen {
 }
 
 // Renders output of the screen only to the side of the user.
-func (s *Screen) Render(c *Context) error {
+func (s *Screen) Render(c *context) error {
 	id := c.Id.ToTelegram()
 	kbd := s.Keyboard
 	iKbd := s.InlineKeyboard
@@ -87,13 +87,13 @@ func (s *Screen) Render(c *Context) error {
 			msg.ReplyMarkup = iKbd.toTelegramInline()
 		} else if kbd != nil {
 			msg.ReplyMarkup = kbd.toTelegramReply()
-			if _, err := c.B.Send(msg); err != nil {
+			if _, err := c.Bot.Send(msg); err != nil {
 				return err
 			}
 			return nil
 		} else {
 			msg.ReplyMarkup = apix.NewRemoveKeyboard(true)
-			if _, err := c.B.Send(msg); err != nil {
+			if _, err := c.Bot.Send(msg); err != nil {
 				return err
 			}
 			return nil
@@ -121,7 +121,7 @@ func (s *Screen) Render(c *Context) error {
 
 	for _, m := range ch {
 		if m != nil {
-			if _, err := c.B.Send(m); err != nil {
+			if _, err := c.Bot.Send(m); err != nil {
 				return err
 			}
 		}

@@ -128,13 +128,12 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 		_, chnOk = chans[sid]
 		// Making the bot ignore anything except "start"
 		// before the session started
-		if u.Message.IsCommand() &&
-			(!sessionOk) {
+		if u.Message.IsCommand() && !sessionOk {
 			cmdName := CommandName(u.Message.Command())
 			if cmdName == "start" {
 				session := bot.sessions[sid]
-				ctx := &Context{
-					B:       bot,
+				ctx := &context{
+					Bot:     bot,
 					Session: session,
 					updates: make(chan *Update),
 				}
@@ -166,8 +165,8 @@ func (bot *Bot) handleGroup(updates chan *Update) {
 		if _, ok := bot.groupSessions[sid]; !ok {
 			bot.groupSessions.Add(sid)
 			session := bot.groupSessions[sid]
-			ctx := &GroupContext{
-				B:            bot,
+			ctx := &groupContext{
+				Bot:          bot,
 				GroupSession: session,
 				updates:      make(chan *Update),
 			}

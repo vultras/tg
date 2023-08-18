@@ -17,12 +17,12 @@ var (
 				ScreenChange("start")
 
 	incDecKeyboard = tx.NewKeyboard("").Row(
-		tx.NewButton("+").ActionFunc(func(c *tx.A) {
+		tx.NewButton("+").ActionFunc(func(c *tx.Context) {
 			d := c.V.(*UserData)
 			d.Counter++
 			c.Sendf("%d", d.Counter)
 		}),
-		tx.NewButton("-").ActionFunc(func(c *tx.A) {
+		tx.NewButton("-").ActionFunc(func(c *tx.Context) {
 			d := c.V.(*UserData)
 			d.Counter--
 			c.Sendf("%d", d.Counter)
@@ -46,10 +46,11 @@ var (
 				Row(
 			tx.NewButton("Send location").
 				WithSendLocation(true).
-				ActionFunc(func(c *tx.A) {
+				ActionFunc(func(c *tx.Context) {
 					var err error
-					if c.U.Message.Location != nil {
-						l := c.U.Message.Location
+					u := c.Update
+					if u.Message.Location != nil {
+						l := u.Message.Location
 						err = c.Sendf(
 							"Longitude: %f\n"+
 								"Latitude: %f\n"+
@@ -77,7 +78,7 @@ var (
 )
 
 var beh = tx.NewBehaviour().
-	WithInitFunc(func(c *tx.A) {
+	WithInitFunc(func(c *tx.Context) {
 		// The session initialization.
 		c.V = &UserData{}
 		c.ChangeScreen("start")
@@ -108,7 +109,7 @@ var beh = tx.NewBehaviour().
 		).
 		WithKeyboard(incDecKeyboard).
 		// The function will be called when reaching the screen.
-		ActionFunc(func(c *tx.A) {
+		ActionFunc(func(c *tx.Context) {
 			d := c.V.(*UserData)
 			c.Sendf("Current counter value = %d", d.Counter)
 		}),
@@ -130,7 +131,7 @@ var beh = tx.NewBehaviour().
 			tx.NewKeyboard("").Row(
 				tx.NewButton("Check").
 					WithData("check").
-					ActionFunc(func(a *tx.A) {
+					ActionFunc(func(a *tx.Context) {
 						d := a.V.(*UserData)
 						a.Sendf("Counter = %d", d.Counter)
 					}),
@@ -139,12 +140,12 @@ var beh = tx.NewBehaviour().
 ).WithCommands(
 	tx.NewCommand("hello").
 		Desc("sends the 'Hello, World!' message back").
-		ActionFunc(func(c *tx.A) {
+		ActionFunc(func(c *tx.Context) {
 			c.Send("Hello, World!")
 		}),
 	tx.NewCommand("read").
 		Desc("reads a string and sends it back").
-		ActionFunc(func(c *tx.A) {
+		ActionFunc(func(c *tx.Context) {
 			c.Send("Type some text:")
 			msg, err := c.ReadTextMessage()
 			if err != nil {
@@ -155,7 +156,7 @@ var beh = tx.NewBehaviour().
 )
 
 func mutateMessage(fn func(string) string) tx.ActionFunc {
-	return func(c *tx.A) {
+	return func(c *tx.Context) {
 		for {
 			msg, err := c.ReadTextMessage()
 			if err == tx.NotAvailableErr {
@@ -173,15 +174,15 @@ func mutateMessage(fn func(string) string) tx.ActionFunc {
 }
 
 var gBeh = tx.NewGroupBehaviour().
-	InitFunc(func(a *tx.GA) {
+	InitFunc(func(c *tx.GC) {
 	}).
 	WithCommands(
-		tx.NewGroupCommand("hello").ActionFunc(func(a *tx.GA) {
-			a.Send("Hello, World!")
+		tx.NewGroupCommand("hello").ActionFunc(func(c *tx.GC) {
+			c.Send("Hello, World!")
 		}),
-		tx.NewGroupCommand("mycounter").ActionFunc(func(a *tx.GA) {
-			d := a.GetSessionValue().(*UserData)
-			a.Sendf("Your counter value is %d", d.Counter)
+		tx.NewGroupCommand("mycounter").ActionFunc(func(c *tx.GC) {
+			d := c.GetSessionValue().(*UserData)
+			c.Sendf("Your counter value is %d", d.Counter)
 		}),
 	)
 
