@@ -1,4 +1,4 @@
-package tx
+package tg
 
 // Represents unique value to identify chats.
 // In fact is simply ID of the chat.

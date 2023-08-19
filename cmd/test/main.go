@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mojosa-software/got/src/tx"
+	"github.com/mojosa-software/got/tg"
 )
 
 type UserData struct {
@@ -13,16 +13,16 @@ type UserData struct {
 }
 
 var (
-	startScreenButton = tx.NewButton("🏠 To the start screen").
+	startScreenButton = tg.NewButton("🏠 To the start screen").
 				ScreenChange("start")
 
-	incDecKeyboard = tx.NewKeyboard("").Row(
-		tx.NewButton("+").ActionFunc(func(c *tx.Context) {
+	incDecKeyboard = tg.NewKeyboard("").Row(
+		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
 			d := c.V.(*UserData)
 			d.Counter++
 			c.Sendf("%d", d.Counter)
 		}),
-		tx.NewButton("-").ActionFunc(func(c *tx.Context) {
+		tg.NewButton("-").ActionFunc(func(c *tg.Context) {
 			d := c.SessionValue().(*UserData)
 			d.Counter--
 			c.Sendf("%d", d.Counter)
@@ -31,22 +31,22 @@ var (
 		startScreenButton,
 	)
 
-	navKeyboard = tx.NewKeyboard("Choose your interest").
+	navKeyboard = tg.NewKeyboard("Choose your interest").
 			WithOneTime(true).
 			Row(
-			tx.NewButton("Inc/Dec").ScreenChange("inc/dec"),
+			tg.NewButton("Inc/Dec").ScreenChange("inc/dec"),
 		).Row(
-		tx.NewButton("Upper case").ScreenChange("upper-case"),
-		tx.NewButton("Lower case").ScreenChange("lower-case"),
+		tg.NewButton("Upper case").ScreenChange("upper-case"),
+		tg.NewButton("Lower case").ScreenChange("lower-case"),
 	).Row(
-		tx.NewButton("Send location").ScreenChange("send-location"),
+		tg.NewButton("Send location").ScreenChange("send-location"),
 	)
 
-	sendLocationKeyboard = tx.NewKeyboard("Press the button to send your location").
+	sendLocationKeyboard = tg.NewKeyboard("Press the button to send your location").
 				Row(
-			tx.NewButton("Send location").
+			tg.NewButton("Send location").
 				WithSendLocation(true).
-				ActionFunc(func(c *tx.Context) {
+				ActionFunc(func(c *tg.Context) {
 					var err error
 					if c.Message.Location != nil {
 						l := c.Message.Location
@@ -71,19 +71,19 @@ var (
 	)
 
 	// The keyboard to return to the start screen.
-	navToStartKeyboard = tx.NewKeyboard("").Row(
+	navToStartKeyboard = tg.NewKeyboard("").Row(
 		startScreenButton,
 	)
 )
 
-var beh = tx.NewBehaviour().
-	WithInitFunc(func(c *tx.Context) {
+var beh = tg.NewBehaviour().
+	WithInitFunc(func(c *tg.Context) {
 		// The session initialization.
 		c.V = &UserData{}
 		c.ChangeScreen("start")
 
 	}).WithScreens(
-	tx.NewScreen("start").
+	tg.NewScreen("start").
 		WithText(
 			"The bot started!"+
 				" The bot is supposed to provide basic"+
@@ -93,13 +93,13 @@ var beh = tx.NewBehaviour().
 		).WithKeyboard(navKeyboard).
 		// The inline keyboard with link to GitHub page.
 		WithIKeyboard(
-			tx.NewKeyboard("istart").Row(
-				tx.NewButton("GoT Github page").
+			tg.NewKeyboard("istart").Row(
+				tg.NewButton("GoT Github page").
 					WithUrl("https://github.com/mojosa-software/got"),
 			),
 		),
 
-	tx.NewScreen("inc/dec").
+	tg.NewScreen("inc/dec").
 		WithText(
 			"The screen shows how "+
 				"user separated data works "+
@@ -108,43 +108,43 @@ var beh = tx.NewBehaviour().
 		).
 		WithKeyboard(incDecKeyboard).
 		// The function will be called when reaching the screen.
-		ActionFunc(func(c *tx.Context) {
+		ActionFunc(func(c *tg.Context) {
 			d := c.V.(*UserData)
 			c.Sendf("Current counter value = %d", d.Counter)
 		}),
 
-	tx.NewScreen("upper-case").
+	tg.NewScreen("upper-case").
 		WithText("Type text and the bot will send you the upper case version to you").
 		WithKeyboard(navToStartKeyboard).
 		ActionFunc(mutateMessage(strings.ToUpper)),
 
-	tx.NewScreen("lower-case").
+	tg.NewScreen("lower-case").
 		WithText("Type text and the bot will send you the lower case version").
 		WithKeyboard(navToStartKeyboard).
 		ActionFunc(mutateMessage(strings.ToLower)),
 
-	tx.NewScreen("send-location").
+	tg.NewScreen("send-location").
 		WithText("Send your location and I will tell where you are!").
 		WithKeyboard(sendLocationKeyboard).
 		WithIKeyboard(
-			tx.NewKeyboard("").Row(
-				tx.NewButton("Check").
+			tg.NewKeyboard("").Row(
+				tg.NewButton("Check").
 					WithData("check").
-					ActionFunc(func(a *tx.Context) {
+					ActionFunc(func(a *tg.Context) {
 						d := a.V.(*UserData)
 						a.Sendf("Counter = %d", d.Counter)
 					}),
 			),
 		),
 ).WithCommands(
-	tx.NewCommand("hello").
+	tg.NewCommand("hello").
 		Desc("sends the 'Hello, World!' message back").
-		ActionFunc(func(c *tx.Context) {
+		ActionFunc(func(c *tg.Context) {
 			c.Send("Hello, World!")
 		}),
-	tx.NewCommand("read").
+	tg.NewCommand("read").
 		Desc("reads a string and sends it back").
-		ActionFunc(func(c *tx.Context) {
+		ActionFunc(func(c *tg.Context) {
 			c.Send("Type some text:")
 			msg, err := c.ReadTextMessage()
 			if err != nil {
@@ -154,11 +154,11 @@ var beh = tx.NewBehaviour().
 		}),
 )
 
-func mutateMessage(fn func(string) string) tx.ActionFunc {
-	return func(c *tx.Context) {
+func mutateMessage(fn func(string) string) tg.ActionFunc {
+	return func(c *tg.Context) {
 		for {
 			msg, err := c.ReadTextMessage()
-			if err == tx.NotAvailableErr {
+			if err == tg.NotAvailableErr {
 				break
 			} else if err != nil {
 				panic(err)
@@ -172,14 +172,14 @@ func mutateMessage(fn func(string) string) tx.ActionFunc {
 	}
 }
 
-var gBeh = tx.NewGroupBehaviour().
-	InitFunc(func(c *tx.GC) {
+var gBeh = tg.NewGroupBehaviour().
+	InitFunc(func(c *tg.GC) {
 	}).
 	WithCommands(
-		tx.NewGroupCommand("hello").ActionFunc(func(c *tx.GC) {
+		tg.NewGroupCommand("hello").ActionFunc(func(c *tg.GC) {
 			c.Send("Hello, World!")
 		}),
-		tx.NewGroupCommand("mycounter").ActionFunc(func(c *tx.GC) {
+		tg.NewGroupCommand("mycounter").ActionFunc(func(c *tg.GC) {
 			d := c.SessionValue().(*UserData)
 			c.Sendf("Your counter value is %d", d.Counter)
 		}),
@@ -188,7 +188,7 @@ var gBeh = tx.NewGroupBehaviour().
 func main() {
 	token := os.Getenv("BOT_TOKEN")
 
-	bot, err := tx.NewBot(token)
+	bot, err := tg.NewBot(token)
 	if err != nil {
 		log.Panic(err)
 	}

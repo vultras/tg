@@ -1,4 +1,4 @@
-package tx
+package tg
 
 func init() {
 	initEncoding()

@@ -11,7 +11,7 @@ import (
 
 	"github.com/mojosa-software/goscript/env"
 	"github.com/mojosa-software/goscript/vm"
-	"github.com/mojosa-software/got/src/tx"
+	"github.com/mojosa-software/got/tg"
 )
 
 type UserData struct {
@@ -29,12 +29,12 @@ func NewCode(code string) *Code {
 	}
 }
 
-func (c *Code) Act(a *tx.A) {
+func (c *Code) Act(a *tg.Context) {
 	var err error
 	fmt.Println("In Act")
 	e := env.NewEnv()
 	e.Define("a", a)
-	e.Define("NotAvailableErr", tx.NotAvailableErr)
+	e.Define("NotAvailableErr", tg.NotAvailableErr)
 	e.Define("panic", func(v any) { panic(v) })
 	err = e.DefineType("UserData", UserData{})
 	if err != nil {
@@ -48,21 +48,21 @@ func (c *Code) Act(a *tx.A) {
 }
 
 func main() {
-	tx.DefineAction("goscript", &Code{})
+	tg.DefineAction("goscript", &Code{})
 
-	var startScreenButton = tx.NewButton("🏠 To the start screen").
+	var startScreenButton = tg.NewButton("🏠 To the start screen").
 		WithAction(NewCode(`
 		a.ChangeScreen("start")
 	`))
 
 	var (
-		incDecKeyboard = tx.NewKeyboard("").Row(
-			tx.NewButton("+").WithAction(NewCode(`
+		incDecKeyboard = tg.NewKeyboard("").Row(
+			tg.NewButton("+").WithAction(NewCode(`
 			d = a.V
 			d.Counter++
 			a.Sendf("%d", d.Counter)
 		`)),
-			tx.NewButton("-").WithAction(NewCode(`
+			tg.NewButton("-").WithAction(NewCode(`
 			d = a.V
 			d.Counter--
 			a.Sendf("%d", d.Counter)
@@ -72,13 +72,13 @@ func main() {
 		)
 
 		// The navigational keyboard.
-		navKeyboard = tx.NewKeyboard("").Row(
-			tx.NewButton("Inc/Dec").WithAction(NewCode(`a.ChangeScreen("inc/dec")`)),
+		navKeyboard = tg.NewKeyboard("").Row(
+			tg.NewButton("Inc/Dec").WithAction(NewCode(`a.ChangeScreen("inc/dec")`)),
 		).Row(
-			tx.NewButton("Upper case").WithAction(NewCode(`a.ChangeScreen("upper-case")`)),
-			tx.NewButton("Lower case").WithAction(NewCode(`a.ChangeScreen("lower-case")`)),
+			tg.NewButton("Upper case").WithAction(NewCode(`a.ChangeScreen("upper-case")`)),
+			tg.NewButton("Lower case").WithAction(NewCode(`a.ChangeScreen("lower-case")`)),
 		).Row(
-			tx.NewButton("Send location").
+			tg.NewButton("Send location").
 				WithSendLocation(true).
 				WithAction(NewCode(`
 				err = nil
@@ -94,24 +94,24 @@ func main() {
 			`)),
 		)
 
-		inlineKeyboard = tx.NewKeyboard("").Row(
-			tx.NewButton("My Telegram").
+		inlineKeyboard = tg.NewKeyboard("").Row(
+			tg.NewButton("My Telegram").
 				WithUrl("https://t.me/surdeus"),
 		)
 
 		// The keyboard to return to the start screen.
-		navToStartKeyboard = tx.NewKeyboard("nav-start").Row(
+		navToStartKeyboard = tg.NewKeyboard("nav-start").Row(
 			startScreenButton,
 		)
 	)
-	var beh = tx.NewBehaviour().
+	var beh = tg.NewBehaviour().
 		// The function will be called every time
 		// the bot is started.
 		WithInit(NewCode(`
 		a.V = new(UserData)
 	`)).
 		WithScreens(
-			tx.NewScreen("start").
+			tg.NewScreen("start").
 				WithText(
 					"The bot started!"+
 						" The bot is supposed to provide basic"+
@@ -121,7 +121,7 @@ func main() {
 				).WithKeyboard(navKeyboard).
 				WithIKeyboard(inlineKeyboard),
 
-			tx.NewScreen("inc/dec").
+			tg.NewScreen("inc/dec").
 				WithText(
 					"The screen shows how "+
 						"user separated data works "+
@@ -135,7 +135,7 @@ func main() {
 			a.Sendf("Current counter value = %d", d.Counter)
 		`)),
 
-			tx.NewScreen("upper-case").
+			tg.NewScreen("upper-case").
 				WithText("Type text and the bot will send you the upper case version to you").
 				WithKeyboard(navToStartKeyboard).
 				WithAction(NewCode(`
@@ -155,7 +155,7 @@ func main() {
 			}
 		`)),
 
-			tx.NewScreen("lower-case").
+			tg.NewScreen("lower-case").
 				WithText("Type text and the bot will send you the lower case version").
 				WithKeyboard(navToStartKeyboard).
 				WithAction(NewCode(`
@@ -175,17 +175,17 @@ func main() {
 			}
 		`)),
 		).WithCommands(
-		tx.NewCommand("start").
+		tg.NewCommand("start").
 			Desc("start or restart the bot").
 			WithAction(NewCode(`
 					a.ChangeScreen("start")
 				`)),
-		tx.NewCommand("hello").
+		tg.NewCommand("hello").
 			Desc("sends the 'Hello, World!' message back").
 			WithAction(NewCode(`
 				a.Send("Hello, World!")
 			`)),
-		tx.NewCommand("read").
+		tg.NewCommand("read").
 			Desc("reads a string and sends it back").
 			WithAction(NewCode(`
 				a.Send("Type some text:")
@@ -202,13 +202,13 @@ func main() {
 	}
 	fmt.Printf("%s", bts)
 
-	jBeh := &tx.Behaviour{}
+	jBeh := &tg.Behaviour{}
 	err = json.Unmarshal(bts, jBeh)
 	if err != nil {
 		panic(err)
 	}
 
-	bot, err := tx.NewBot(os.Getenv("BOT_TOKEN"))
+	bot, err := tg.NewBot(os.Getenv("BOT_TOKEN"))
 	if err != nil {
 		panic(err)
 	}

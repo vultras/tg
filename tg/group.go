@@ -1,4 +1,4 @@
-package tx
+package tg
 
 // Customized actions for the group behaviour.
 type GroupAction interface {

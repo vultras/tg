@@ -1,4 +1,4 @@
-package tx
+package tg
 
 // Interface to interact with the user.
 type Context struct {

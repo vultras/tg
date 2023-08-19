@@ -1,4 +1,4 @@
-package tx
+package tg
 
 // The package implements
 // behaviour for the Telegram bots.

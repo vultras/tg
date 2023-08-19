@@ -1,4 +1,4 @@
-package tx
+package tg
 
 import (
 	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
