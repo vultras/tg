@@ -152,6 +152,12 @@ var beh = tg.NewBehaviour().
 			}
 			c.Sendf("You typed %q", msg)
 		}),
+	tg.NewCommand("image").
+		Desc("sends a sample image").
+		ActionFunc(func(c *tg.Context) {
+			img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
+			c.Send(img)
+		}),
 )
 
 func mutateMessage(fn func(string) string) tg.ActionFunc {
