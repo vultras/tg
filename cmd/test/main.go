@@ -8,6 +8,10 @@ import (
 	"github.com/mojosa-software/got/tg"
 )
 
+type BotData struct {
+	Name string
+}
+
 type UserData struct {
 	Counter int
 }
@@ -158,6 +162,12 @@ var beh = tg.NewBehaviour().
 			img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
 			c.Send(img)
 		}),
+	tg.NewCommand("botname").
+		Desc("get the bot name").
+		ActionFunc(func(c *tg.Context) {
+			bd := c.Bot.Value().(*BotData)
+			c.Sendf("My name is %q", bd.Name)
+		}),
 )
 
 func mutateMessage(fn func(string) string) tg.ActionFunc {
@@ -201,6 +211,9 @@ func main() {
 	bot = bot.
 		WithBehaviour(beh).
 		WithGroupBehaviour(gBeh).
+		WithValue(&BotData{
+			Name: "Jay",
+		}).
 		Debug(true)
 
 	log.Printf("Authorized on account %s", bot.Api.Self.UserName)

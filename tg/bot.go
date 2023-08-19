@@ -24,6 +24,7 @@ type Bot struct {
 	channelBehaviour *ChannelBehaviour
 	sessions         SessionMap
 	groupSessions    GroupSessionMap
+	value            any
 }
 
 // Return the new bot with empty sessions and behaviour.
@@ -36,6 +37,19 @@ func NewBot(token string) (*Bot, error) {
 	return &Bot{
 		Api: bot,
 	}, nil
+}
+
+// Set the custom global value for the bot,
+// so it can be accessed from the callback
+// functions.
+func (bot *Bot) WithValue(v any) *Bot {
+	bot.value = v
+	return bot
+}
+
+// Get the global bot value.
+func (bot *Bot) Value() any {
+	return bot.value
 }
 
 func (bot *Bot) Debug(debug bool) *Bot {
