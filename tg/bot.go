@@ -146,35 +146,41 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 	var sid SessionId
 	for u := range updates {
 		sid = SessionId(u.FromChat().ID)
-		var sessionOk, chnOk bool
 		// Create new session if the one does not exist
 		// for this user.
-		if _, sessionOk = bot.sessions[sid]; !sessionOk {
-			bot.sessions.Add(sid)
-		}
 
-		_, chnOk = chans[sid]
 		// Making the bot ignore anything except "start"
 		// before the session started
-		if u.Message.IsCommand() && !sessionOk {
-			cmdName := CommandName(u.Message.Command())
-			if cmdName == "start" {
-				session := bot.sessions[sid]
+		session, sessionOk := bot.sessions[sid]
+		chn, chnOk := chans[sid]
+		if sessionOk {
+			if !chnOk {
 				ctx := &context{
 					Bot:     bot,
 					Session: session,
 					updates: make(chan *Update),
 				}
-
-				// Starting the new goroutine if
-				// there is no one.
-				if !chnOk {
-					chn := make(chan *Update)
-					chans[sid] = chn
-					go ctx.handleUpdateChan(chn)
+				chn := make(chan *Update)
+				chans[sid] = chn
+				go ctx.handleUpdateChan(chn)
+			}
+		} else {
+			if u.Message != nil && u.Message.Command() == "start" {
+				if !sessionOk {
+					bot.sessions.Add(sid)
 				}
+				lsession := bot.sessions[sid]
+				ctx := &context{
+					Bot:     bot,
+					Session: lsession,
+					updates: make(chan *Update),
+				}
+				chn := make(chan *Update)
+				chans[sid] = chn
+				go ctx.handleUpdateChan(chn)
 			}
 		}
+
 		chn, ok := chans[sid]
 		// The bot MUST get the "start" command.
 		// It will do nothing otherwise.
