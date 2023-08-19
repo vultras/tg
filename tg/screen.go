@@ -1,7 +1,7 @@
 package tg
 
 import (
-	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 // Unique identifier for the screen.
@@ -62,13 +62,17 @@ func (s *Screen) ActionFunc(a ActionFunc) *Screen {
 }
 
 // Renders output of the screen only to the side of the user.
-func (s *Screen) Render(c *context) error {
-	id := c.Id.ToTelegram()
+func (s *Screen) Render(
+	sid SessionId, bot *Bot,
+) ([]*Message, error) {
+	cid := sid.ToApi()
 	kbd := s.Keyboard
 	iKbd := s.InlineKeyboard
 
-	var ch [2]apix.Chattable
+	var ch [2]tgbotapi.Chattable
 	var txt string
+
+	msgs := []*Message{}
 
 	// Screen text and inline keyboard.
 	if s.Text != "" {
@@ -82,23 +86,27 @@ func (s *Screen) Render(c *context) error {
 		}
 	}
 	if txt != "" {
-		msg := apix.NewMessage(id, txt)
+		msgConfig := tgbotapi.NewMessage(cid, txt)
 		if iKbd != nil {
-			msg.ReplyMarkup = iKbd.toTelegramInline()
+			msgConfig.ReplyMarkup = iKbd.toTelegramInline()
 		} else if kbd != nil {
-			msg.ReplyMarkup = kbd.toTelegramReply()
-			if _, err := c.Bot.Send(msg); err != nil {
-				return err
+			msgConfig.ReplyMarkup = kbd.toTelegramReply()
+			msg, err := bot.Api.Send(msgConfig)
+			if err != nil {
+				return msgs, err
 			}
-			return nil
+			msgs = append(msgs, &msg)
+			return msgs, nil
 		} else {
-			msg.ReplyMarkup = apix.NewRemoveKeyboard(true)
-			if _, err := c.Bot.Send(msg); err != nil {
-				return err
+			msgConfig.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+			msg, err := bot.Api.Send(msgConfig)
+			if err != nil {
+				return msgs, err
 			}
-			return nil
+			msgs = append(msgs, &msg)
+			return msgs, nil
 		}
-		ch[0] = msg
+		ch[0] = msgConfig
 	}
 
 	// Screen text and reply keyboard.
@@ -109,23 +117,25 @@ func (s *Screen) Render(c *context) error {
 		} else {
 			txt = ">"
 		}
-		msg := apix.NewMessage(id, txt)
-		msg.ReplyMarkup = kbd.toTelegramReply()
-		ch[1] = msg
+		msgConfig := tgbotapi.NewMessage(cid, txt)
+		msgConfig.ReplyMarkup = kbd.toTelegramReply()
+		ch[1] = msgConfig
 	} else {
 		// Removing keyboard if there is none.
-		msg := apix.NewMessage(id, ">")
-		msg.ReplyMarkup = apix.NewRemoveKeyboard(true)
-		ch[1] = msg
+		msgConfig := tgbotapi.NewMessage(cid, ">")
+		msgConfig.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+		ch[1] = msgConfig
 	}
 
 	for _, m := range ch {
 		if m != nil {
-			if _, err := c.Bot.Send(m); err != nil {
-				return err
+			msg, err := bot.Api.Send(m)
+			if err != nil {
+				return msgs, err
 			}
+			msgs = append(msgs, &msg)
 		}
 	}
 
-	return nil
+	return msgs, nil
 }

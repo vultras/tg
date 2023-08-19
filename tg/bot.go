@@ -3,17 +3,19 @@ package tg
 import (
 	"errors"
 
-	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"fmt"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type Update = apix.Update
-type Chat = apix.Chat
-type User = apix.User
+type Update = tgbotapi.Update
+type Chat = tgbotapi.Chat
+type User = tgbotapi.User
 
 // The wrapper around Telegram API.
 type Bot struct {
-	*apix.BotAPI
-	Me *User
+	Api *tgbotapi.BotAPI
+	Me  *User
 	// Private bot behaviour.
 	behaviour *Behaviour
 	// Group bot behaviour.
@@ -26,28 +28,55 @@ type Bot struct {
 
 // Return the new bot with empty sessions and behaviour.
 func NewBot(token string) (*Bot, error) {
-	bot, err := apix.NewBotAPI(token)
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Bot{
-		BotAPI: bot,
+		Api: bot,
 	}, nil
 }
 
-func (bot *Bot) SessionValueBySid(
-	sid SessionId,
-) (any, bool) {
-	v, ok := bot.sessions[sid]
-	return v.V, ok
+func (bot *Bot) Debug(debug bool) *Bot {
+	bot.Api.Debug = debug
+	return bot
 }
 
-func (bot *Bot) GetGroupSessionValue(
+func (bot *Bot) Send(
+	sid SessionId, v any,
+) (*Message, error) {
+	sendable, ok := v.(Sendable)
+	if !ok {
+		cid := sid.ToApi()
+		str := tgbotapi.NewMessage(
+			cid, fmt.Sprint(v),
+		)
+		msg, err := bot.Api.Send(str)
+		return &msg, err
+	}
+
+	return sendable.Send(sid, bot)
+}
+
+func (bot *Bot) Render(
+	sid SessionId, r Renderable,
+) ([]*Message, error) {
+	return r.Render(sid, bot)
+}
+
+func (bot *Bot) GetSession(
 	sid SessionId,
-) (any, bool) {
-	v, ok := bot.groupSessions[sid]
-	return v.V, ok
+) (*Session, bool) {
+	session, ok := bot.sessions[sid]
+	return session, ok
+}
+
+func (bot *Bot) GetGroupSession(
+	sid SessionId,
+) (*GroupSession, bool) {
+	session, ok := bot.groupSessions[sid]
+	return session, ok
 }
 
 func (b *Bot) WithBehaviour(beh *Behaviour) *Bot {
@@ -78,10 +107,9 @@ func (bot *Bot) Run() error {
 		bot.groupBehaviour == nil {
 		return errors.New("no behaviour defined")
 	}
-	bot.Debug = true
-	uc := apix.NewUpdate(0)
+	uc := tgbotapi.NewUpdate(0)
 	uc.Timeout = 60
-	updates := bot.GetUpdatesChan(uc)
+	updates := bot.Api.GetUpdatesChan(uc)
 	handles := make(map[string]chan *Update)
 
 	if bot.behaviour != nil {
@@ -97,7 +125,7 @@ func (bot *Bot) Run() error {
 		go bot.handleGroup(chn)
 	}
 
-	me, _ := bot.GetMe()
+	me, _ := bot.Api.GetMe()
 	bot.Me = &me
 	for u := range updates {
 		chn, ok := handles[u.FromChat().Type]
@@ -166,9 +194,9 @@ func (bot *Bot) handleGroup(updates chan *Update) {
 			bot.groupSessions.Add(sid)
 			session := bot.groupSessions[sid]
 			ctx := &groupContext{
-				Bot:          bot,
-				GroupSession: session,
-				updates:      make(chan *Update),
+				Bot:     bot,
+				Session: session,
+				updates: make(chan *Update),
 			}
 			chn := make(chan *Update)
 			chans[sid] = chn

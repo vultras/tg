@@ -5,7 +5,7 @@ package tg
 type SessionId int64
 
 // Convert the SessionId to Telegram API's type.
-func (si SessionId) ToTelegram() int64 {
+func (si SessionId) ToApi() int64 {
 	return int64(si)
 }
 
@@ -15,14 +15,13 @@ type Session struct {
 	// Id of the chat of the user.
 	Id SessionId
 	// Custom value for each user.
-	V any
+	Value any
 }
 
 // Return new empty session with specified user ID.
 func NewSession(id SessionId) *Session {
 	return &Session{
 		Id: id,
-		V:  make(map[string]any),
 	}
 }
 
@@ -39,14 +38,13 @@ func (sm SessionMap) Add(sid SessionId) {
 type GroupSession struct {
 	Id SessionId
 	// Information for each user in the group.
-	V map[SessionId]any
+	Value any
 }
 
 // Returns new empty group session with specified group and user IDs.
 func NewGroupSession(id SessionId) *GroupSession {
 	return &GroupSession{
 		Id: id,
-		V:  make(map[SessionId]any),
 	}
 }
 

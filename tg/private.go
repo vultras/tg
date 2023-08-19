@@ -7,8 +7,8 @@ import (
 )
 
 type context struct {
-	*Session
-	*Bot
+	Session *Session
+	Bot     *Bot
 	updates chan *Update
 	// Is true if currently reading the Update.
 	readingUpdate bool
@@ -21,7 +21,7 @@ type context struct {
 
 // Goroutie function to handle each user.
 func (c *context) handleUpdateChan(updates chan *Update) {
-	beh := c.behaviour
+	beh := c.Bot.behaviour
 
 	if beh.Init != nil {
 		c.run(beh.Init, nil)
@@ -76,7 +76,7 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 			)
 			data := u.CallbackQuery.Data
 
-			_, err := c.Request(cb)
+			_, err := c.Bot.Api.Request(cb)
 			if err != nil {
 				panic(err)
 			}
@@ -113,12 +113,6 @@ func (c *context) run(a Action, u *Update) {
 	})
 }
 
-func (c *context) SendFile(f *File) error {
-	switch f.typ {
-	}
-	return nil
-}
-
 // Returns the next update ignoring current screen.
 func (c *context) ReadUpdate() (*Update, error) {
 	c.readingUpdate = true
@@ -145,36 +139,17 @@ func (c *context) ReadTextMessage() (string, error) {
 }
 
 // Sends to the user specified text.
-func (c *context) Send(values ...any) error {
-	cid := c.Id.ToTelegram()
-	for _, v := range values {
-		var msg tgbotapi.Chattable
-
-		switch rv := v.(type) {
-		case *File:
-			switch rv.Type() {
-			case ImageFileType:
-				msg = tgbotapi.NewPhoto(cid, rv)
-			default:
-				return UnknownFileTypeErr
-			}
-		default:
-			msg = tgbotapi.NewMessage(
-				cid, fmt.Sprint(v),
-			)
-		}
-
-		_, err := c.Bot.Send(msg)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (c *context) Send(v any) (*Message, error) {
+	return c.Bot.Send(c.Session.Id, v)
 }
 
 // Sends the formatted with fmt.Sprintf message to the user.
-func (c *context) Sendf(format string, v ...any) error {
-	return c.Send(fmt.Sprintf(format, v...))
+func (c *context) Sendf(format string, v ...any) (*Message, error) {
+	msg, err := c.Send(fmt.Sprintf(format, v...))
+	if err != nil {
+		return nil, err
+	}
+	return msg, err
 }
 
 // Interface to interact with the user.
@@ -198,7 +173,7 @@ func (af ActionFunc) Act(c *Context) {
 type ScreenChange ScreenId
 
 func (sc ScreenChange) Act(c *Context) {
-	if !c.behaviour.ScreenExist(ScreenId(sc)) {
+	if !c.Bot.behaviour.ScreenExist(ScreenId(sc)) {
 		panic(ScreenNotExistErr)
 	}
 	err := c.ChangeScreen(ScreenId(sc))
@@ -211,7 +186,7 @@ type C = Context
 
 // Changes screen of user to the Id one.
 func (c *Context) ChangeScreen(screenId ScreenId) error {
-	if !c.behaviour.ScreenExist(screenId) {
+	if !c.Bot.behaviour.ScreenExist(screenId) {
 		return ScreenNotExistErr
 	}
 
@@ -224,18 +199,13 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 
 	// Getting the screen and changing to
 	// then executing its action.
-	screen := c.behaviour.Screens[screenId]
+	screen := c.Bot.behaviour.Screens[screenId]
 	c.prevScreen = c.curScreen
 	c.curScreen = screen
-	screen.Render(c.context)
+	screen.Render(c.Session.Id, c.Bot)
 	if screen.Action != nil {
 		c.run(screen.Action, c.Update)
 	}
 
 	return nil
-}
-
-func (c *Context) SessionValue() any {
-	v, _ := c.SessionValueBySid(c.Id)
-	return v
 }

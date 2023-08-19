@@ -18,12 +18,12 @@ var (
 
 	incDecKeyboard = tg.NewKeyboard("").Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
-			d := c.V.(*UserData)
+			d := c.Session.Value.(*UserData)
 			d.Counter++
 			c.Sendf("%d", d.Counter)
 		}),
 		tg.NewButton("-").ActionFunc(func(c *tg.Context) {
-			d := c.SessionValue().(*UserData)
+			d := c.Session.Value.(*UserData)
 			d.Counter--
 			c.Sendf("%d", d.Counter)
 		}),
@@ -50,7 +50,7 @@ var (
 					var err error
 					if c.Message.Location != nil {
 						l := c.Message.Location
-						err = c.Sendf(
+						_, err = c.Sendf(
 							"Longitude: %f\n"+
 								"Latitude: %f\n"+
 								"Heading: %d"+
@@ -60,7 +60,7 @@ var (
 							l.Heading,
 						)
 					} else {
-						err = c.Send("Somehow wrong location was sent")
+						_, err = c.Send("Somehow wrong location was sent")
 					}
 					if err != nil {
 						c.Send(err)
@@ -79,7 +79,7 @@ var (
 var beh = tg.NewBehaviour().
 	WithInitFunc(func(c *tg.Context) {
 		// The session initialization.
-		c.V = &UserData{}
+		c.Session.Value = &UserData{}
 		c.ChangeScreen("start")
 
 	}).WithScreens(
@@ -109,7 +109,7 @@ var beh = tg.NewBehaviour().
 		WithKeyboard(incDecKeyboard).
 		// The function will be called when reaching the screen.
 		ActionFunc(func(c *tg.Context) {
-			d := c.V.(*UserData)
+			d := c.Session.Value.(*UserData)
 			c.Sendf("Current counter value = %d", d.Counter)
 		}),
 
@@ -131,7 +131,7 @@ var beh = tg.NewBehaviour().
 				tg.NewButton("Check").
 					WithData("check").
 					ActionFunc(func(a *tg.Context) {
-						d := a.V.(*UserData)
+						d := a.Session.Value.(*UserData)
 						a.Sendf("Counter = %d", d.Counter)
 					}),
 			),
@@ -170,7 +170,7 @@ func mutateMessage(fn func(string) string) tg.ActionFunc {
 				panic(err)
 			}
 
-			err = c.Sendf("%s", fn(msg))
+			_, err = c.Sendf("%s", fn(msg))
 			if err != nil {
 				panic(err)
 			}
@@ -186,7 +186,7 @@ var gBeh = tg.NewGroupBehaviour().
 			c.Send("Hello, World!")
 		}),
 		tg.NewGroupCommand("mycounter").ActionFunc(func(c *tg.GC) {
-			d := c.SessionValue().(*UserData)
+			d := c.Session().Value.(*UserData)
 			c.Sendf("Your counter value is %d", d.Counter)
 		}),
 	)
@@ -200,10 +200,9 @@ func main() {
 	}
 	bot = bot.
 		WithBehaviour(beh).
-		WithGroupBehaviour(gBeh)
+		WithGroupBehaviour(gBeh).
+		Debug(true)
 
-	bot.Debug = true
-
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	log.Printf("Authorized on account %s", bot.Api.Self.UserName)
 	bot.Run()
 }

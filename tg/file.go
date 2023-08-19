@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type FileType int
@@ -68,4 +70,23 @@ func (f *File) UploadData() (string, io.Reader, error) {
 
 func (f *File) SendData() string {
 	return ""
+}
+func (f *File) Send(
+	sid SessionId, bot *Bot,
+) (*Message, error) {
+	var chattable tgbotapi.Chattable
+	cid := sid.ToApi()
+
+	switch f.Type() {
+	case ImageFileType:
+		photo := tgbotapi.NewPhoto(cid, f)
+		photo.Caption = f.caption
+		chattable = photo
+	default:
+		return nil, UnknownFileTypeErr
+	}
+
+	msg, err := bot.Api.Send(chattable)
+
+	return &msg, err
 }
