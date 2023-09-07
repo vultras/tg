@@ -168,6 +168,9 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 		session, sessionOk := bot.sessions[sid]
 		chn, chnOk := chans[sid]
 		if sessionOk {
+			// Creating new goroutine for 
+			// the session that exists
+			// but has none.
 			if !chnOk {
 				ctx := &context{
 					Bot:     bot,
@@ -178,21 +181,19 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 				chans[sid] = chn
 				go ctx.handleUpdateChan(chn)
 			}
-		} else {
-			if u.Message != nil && u.Message.Command() == "start" {
-				if !sessionOk {
-					bot.sessions.Add(sid)
-				}
-				lsession := bot.sessions[sid]
-				ctx := &context{
-					Bot:     bot,
-					Session: lsession,
-					updates: make(chan *Update),
-				}
-				chn := make(chan *Update)
-				chans[sid] = chn
-				go ctx.handleUpdateChan(chn)
+		} else if u.Message != nil {
+			// Create session on any message
+			// if we have no one.
+			bot.sessions.Add(sid)
+			lsession := bot.sessions[sid]
+			ctx := &context{
+				Bot:     bot,
+				Session: lsession,
+				updates: make(chan *Update),
 			}
+			chn := make(chan *Update)
+			chans[sid] = chn
+			go ctx.handleUpdateChan(chn)
 		}
 
 		chn, ok := chans[sid]

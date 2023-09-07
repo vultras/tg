@@ -14,6 +14,9 @@ func (si SessionId) ToApi() int64 {
 type Session struct {
 	// Id of the chat of the user.
 	Id SessionId
+	// True if the session started.
+	// (got the '/start' command.
+	Started bool
 	// Custom value for each user.
 	Value any
 }

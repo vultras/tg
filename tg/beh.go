@@ -5,6 +5,7 @@ package tg
 
 // The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
+	PreStart *action
 	Init      *action
 	Screens   ScreenMap
 	Keyboards KeyboardMap
@@ -27,10 +28,25 @@ func (b *Behaviour) WithInit(a Action) *Behaviour {
 	return b
 }
 
+// Alias to WithInit to simplify behaviour definitions.
 func (b *Behaviour) WithInitFunc(
 	fn ActionFunc,
 ) *Behaviour {
 	return b.WithInit(fn)
+}
+
+// Defines pre-start action.
+// E. g. when the user has not type the "/start" command.
+// Mostly used to send the "/start" command back
+// with some warning.
+func (b *Behaviour) WithPreStart(a Action) *Behaviour {
+	b.PreStart = newAction(a)
+	return b
+}
+
+// Alias for WithPreStart to be used with function inside.
+func (b *Behaviour) WithPreStartFunc(fn ActionFunc) *Behaviour {
+	return b.WithPreStart(fn)
 }
 
 // The function sets screens.

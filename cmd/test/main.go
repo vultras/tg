@@ -84,8 +84,10 @@ var beh = tg.NewBehaviour().
 	WithInitFunc(func(c *tg.Context) {
 		// The session initialization.
 		c.Session.Value = &UserData{}
-		c.ChangeScreen("start")
 
+	}). // On any message update before the bot created session.
+	WithPreStartFunc(func(c *tg.Context){
+		c.Send("Please, use the /start command to start the bot")
 	}).WithScreens(
 	tg.NewScreen("start").
 		WithText(
@@ -141,6 +143,11 @@ var beh = tg.NewBehaviour().
 			),
 		),
 ).WithCommands(
+	tg.NewCommand("start").
+		Desc("start the bot").
+		ActionFunc(func(c *tg.Context){
+			c.ChangeScreen("start")
+		}),
 	tg.NewCommand("hello").
 		Desc("sends the 'Hello, World!' message back").
 		ActionFunc(func(c *tg.Context) {

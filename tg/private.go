@@ -23,6 +23,8 @@ type context struct {
 func (c *context) handleUpdateChan(updates chan *Update) {
 	beh := c.Bot.behaviour
 
+	session := c.Session
+	preStart := beh.PreStart
 	if beh.Init != nil {
 		c.run(beh.Init, nil)
 	}
@@ -31,14 +33,34 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 		screen := c.curScreen
 		// The part is added to implement custom update handling.
 		if u.Message != nil {
-			if u.Message.IsCommand() && !c.readingUpdate {
+			if !session.Started {
+				if u.Message.IsCommand() &&
+						u.Message.Command() == "start" {
+					// Special treatment for the "/start"
+					// command.
+					session.Started = true
+					cmdName := CommandName("start")
+					cmd, ok := beh.Commands[cmdName]
+					if ok {
+						act = cmd.Action
+					} else {
+						// Some usage.
+					}
+				} else {
+					// Prestart handling.
+					act = preStart
+				}
+			} else if u.Message.IsCommand() {
+				// Command handling.
 				cmdName := CommandName(u.Message.Command())
 				cmd, ok := beh.Commands[cmdName]
 				if ok {
 					act = cmd.Action
 				} else {
+					// Some usage.
 				}
 			} else {
+				// Simple messages handling.
 				kbd := screen.Keyboard
 				if kbd == nil {
 					if c.readingUpdate {
@@ -69,7 +91,7 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 					act = btn.Action
 				}
 			}
-		} else if u.CallbackQuery != nil {
+		} else if u.CallbackQuery != nil && session.Started {
 			cb := tgbotapi.NewCallback(
 				u.CallbackQuery.ID,
 				u.CallbackQuery.Data,
