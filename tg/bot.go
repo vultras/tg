@@ -3,7 +3,7 @@ package tg
 import (
 	"errors"
 
-	"fmt"
+	//"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -25,6 +25,7 @@ type Bot struct {
 	sessions         SessionMap
 	groupSessions    GroupSessionMap
 	value            any
+	
 }
 
 // Return the new bot with empty sessions and behaviour.
@@ -58,25 +59,36 @@ func (bot *Bot) Debug(debug bool) *Bot {
 }
 
 func (bot *Bot) Send(
-	sid SessionId, v any,
+	sid SessionId, v Sendable,
 ) (*Message, error) {
-	sendable, ok := v.(Sendable)
-	if !ok {
-		cid := sid.ToApi()
-		str := tgbotapi.NewMessage(
-			cid, fmt.Sprint(v),
-		)
-		msg, err := bot.Api.Send(str)
-		return &msg, err
+	config, err := v.SendConfig(sid, bot)
+	if err != nil {
+		return nil, err
 	}
 
-	return sendable.Send(sid, bot)
+	msg, err := bot.Api.Send(config.ToApi())
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
 }
 
 func (bot *Bot) Render(
 	sid SessionId, r Renderable,
 ) ([]*Message, error) {
-	return r.Render(sid, bot)
+	configs, err := r.Render(sid, bot)
+	if err != nil {
+		return []*Message{}, err
+	}
+	messages := []*Message{}
+	for _, config := range configs {
+		msg, err := bot.Api.Send(config.ToApi())
+		if err != nil {
+			return messages, err
+		}
+		messages = append(messages, &msg)
+	}
+	return messages, nil
 }
 
 func (bot *Bot) GetSession(

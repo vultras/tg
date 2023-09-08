@@ -20,7 +20,7 @@ var (
 	startScreenButton = tg.NewButton("🏠 To the start screen").
 				ScreenChange("start")
 
-	incDecKeyboard = tg.NewKeyboard("").Row(
+	incDecKeyboard = tg.NewInline().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
 			d := c.Session.Value.(*UserData)
 			d.Counter++
@@ -35,7 +35,7 @@ var (
 		startScreenButton,
 	)
 
-	navKeyboard = tg.NewKeyboard("Choose your interest").
+	navKeyboard = tg.NewReply().
 			WithOneTime(true).
 			Row(
 			tg.NewButton("Inc/Dec").ScreenChange("inc/dec"),
@@ -46,7 +46,7 @@ var (
 		tg.NewButton("Send location").ScreenChange("send-location"),
 	)
 
-	sendLocationKeyboard = tg.NewKeyboard("Press the button to send your location").
+	sendLocationKeyboard = tg.NewReply().
 				Row(
 			tg.NewButton("Send location").
 				WithSendLocation(true).
@@ -64,10 +64,10 @@ var (
 							l.Heading,
 						)
 					} else {
-						_, err = c.Send("Somehow wrong location was sent")
+						_, err = c.Sendf("Somehow wrong location was sent")
 					}
 					if err != nil {
-						c.Send(err)
+						c.Sendf("%q", err)
 					}
 				}),
 		).Row(
@@ -75,7 +75,7 @@ var (
 	)
 
 	// The keyboard to return to the start screen.
-	navToStartKeyboard = tg.NewKeyboard("").Row(
+	navToStartKeyboard = tg.NewReply().Row(
 		startScreenButton,
 	)
 )
@@ -87,7 +87,7 @@ var beh = tg.NewBehaviour().
 
 	}). // On any message update before the bot created session.
 	WithPreStartFunc(func(c *tg.Context){
-		c.Send("Please, use the /start command to start the bot")
+		c.Sendf("Please, use the /start command to start the bot")
 	}).WithScreens(
 	tg.NewScreen("start").
 		WithText(
@@ -96,10 +96,10 @@ var beh = tg.NewBehaviour().
 				" understand of how the API works, so just"+
 				" horse around a bit to guess everything out"+
 				" by yourself!",
-		).WithKeyboard(navKeyboard).
+		).WithReply(navKeyboard).
 		// The inline keyboard with link to GitHub page.
-		WithIKeyboard(
-			tg.NewKeyboard("istart").Row(
+		WithInline(
+			tg.NewInline().Row(
 				tg.NewButton("GoT Github page").
 					WithUrl("https://github.com/mojosa-software/got"),
 			),
@@ -112,7 +112,7 @@ var beh = tg.NewBehaviour().
 				"by saving the counter for each of users "+
 				"separately. ",
 		).
-		WithKeyboard(incDecKeyboard).
+		WithReply(&tg.ReplyKeyboard{Keyboard: incDecKeyboard.Keyboard}).
 		// The function will be called when reaching the screen.
 		ActionFunc(func(c *tg.Context) {
 			d := c.Session.Value.(*UserData)
@@ -121,19 +121,19 @@ var beh = tg.NewBehaviour().
 
 	tg.NewScreen("upper-case").
 		WithText("Type text and the bot will send you the upper case version to you").
-		WithKeyboard(navToStartKeyboard).
+		WithReply(navToStartKeyboard).
 		ActionFunc(mutateMessage(strings.ToUpper)),
 
 	tg.NewScreen("lower-case").
 		WithText("Type text and the bot will send you the lower case version").
-		WithKeyboard(navToStartKeyboard).
+		WithReply(navToStartKeyboard).
 		ActionFunc(mutateMessage(strings.ToLower)),
 
 	tg.NewScreen("send-location").
 		WithText("Send your location and I will tell where you are!").
-		WithKeyboard(sendLocationKeyboard).
-		WithIKeyboard(
-			tg.NewKeyboard("").Row(
+		WithReply(sendLocationKeyboard).
+		WithInline(
+			tg.NewInline().Row(
 				tg.NewButton("Check").
 					WithData("check").
 					ActionFunc(func(a *tg.Context) {
@@ -151,12 +151,12 @@ var beh = tg.NewBehaviour().
 	tg.NewCommand("hello").
 		Desc("sends the 'Hello, World!' message back").
 		ActionFunc(func(c *tg.Context) {
-			c.Send("Hello, World!")
+			c.Sendf("Hello, World!")
 		}),
 	tg.NewCommand("read").
 		Desc("reads a string and sends it back").
 		ActionFunc(func(c *tg.Context) {
-			c.Send("Type some text:")
+			c.Sendf("Type some text:")
 			msg, err := c.ReadTextMessage()
 			if err != nil {
 				return

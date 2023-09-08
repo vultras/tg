@@ -15,9 +15,9 @@ type Screen struct {
 	// reached.
 	Text string
 	// The keyboard to be sent in the message part.
-	InlineKeyboard *Keyboard
+	Inline *InlineKeyboard
 	// Keyboard to be displayed on the screen.
-	Keyboard *Keyboard
+	Reply *ReplyKeyboard
 	// Action called on the reaching the screen.
 	Action *action
 }
@@ -38,17 +38,13 @@ func (s *Screen) WithText(text string) *Screen {
 	return s
 }
 
-func (s *Screen) WithInlineKeyboard(ikbd *Keyboard) *Screen {
-	s.InlineKeyboard = ikbd
+func (s *Screen) WithInline(ikbd *InlineKeyboard) *Screen {
+	s.Inline= ikbd
 	return s
 }
 
-func (s *Screen) WithIKeyboard(ikbd *Keyboard) *Screen {
-	return s.WithInlineKeyboard(ikbd)
-}
-
-func (s *Screen) WithKeyboard(kbd *Keyboard) *Screen {
-	s.Keyboard = kbd
+func (s *Screen) WithReply(kbd *ReplyKeyboard) *Screen {
+	s.Reply = kbd
 	return s
 }
 
@@ -61,81 +57,54 @@ func (s *Screen) ActionFunc(a ActionFunc) *Screen {
 	return s.WithAction(a)
 }
 
-// Renders output of the screen only to the side of the user.
 func (s *Screen) Render(
 	sid SessionId, bot *Bot,
-) ([]*Message, error) {
+) ([]*SendConfig, error) {
 	cid := sid.ToApi()
-	kbd := s.Keyboard
-	iKbd := s.InlineKeyboard
-
-	var ch [2]tgbotapi.Chattable
+	reply := s.Reply
+	inline := s.Inline
+	ret := []*SendConfig{}
 	var txt string
-
-	msgs := []*Message{}
-
 	// Screen text and inline keyboard.
 	if s.Text != "" {
 		txt = s.Text
-	} else if iKbd != nil {
-		if iKbd.Text != "" {
-			txt = iKbd.Text
-		} else {
-			// Default to send the keyboard.
-			txt = ">"
-		}
+	} else if inline != nil {
+		// Default to send the keyboard.
+		txt = ">"
 	}
 	if txt != "" {
 		msgConfig := tgbotapi.NewMessage(cid, txt)
-		if iKbd != nil {
-			msgConfig.ReplyMarkup = iKbd.toTelegramInline()
-		} else if kbd != nil {
-			msgConfig.ReplyMarkup = kbd.toTelegramReply()
-			msg, err := bot.Api.Send(msgConfig)
-			if err != nil {
-				return msgs, err
-			}
-			msgs = append(msgs, &msg)
-			return msgs, nil
+		if inline != nil {
+			msgConfig.ReplyMarkup = inline.ToApi()
+		} else if reply != nil {
+			msgConfig.ReplyMarkup = reply.ToApi()
+			ret = append(ret, &SendConfig{Message: &msgConfig})
+			return ret, nil
 		} else {
-			msgConfig.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
-			msg, err := bot.Api.Send(msgConfig)
-			if err != nil {
-				return msgs, err
-			}
-			msgs = append(msgs, &msg)
-			return msgs, nil
+			msgConfig.ReplyMarkup = NewReply().
+				WithRemove(true).
+				ToApi()
+			ret = append(ret, &SendConfig{Message: &msgConfig})
+			return ret, nil
 		}
-		ch[0] = msgConfig
+		ret = append(ret, &SendConfig{Message: &msgConfig})
 	}
 
 	// Screen text and reply keyboard.
-	txt = ""
-	if kbd != nil {
-		if kbd.Text != "" {
-			txt = kbd.Text
-		} else {
-			txt = ">"
-		}
-		msgConfig := tgbotapi.NewMessage(cid, txt)
-		msgConfig.ReplyMarkup = kbd.toTelegramReply()
-		ch[1] = msgConfig
+	if reply != nil {
+		msgConfig := tgbotapi.NewMessage(cid, ">")
+		msgConfig.ReplyMarkup = reply.ToApi()
+		ret = append(ret, &SendConfig{
+			Message: &msgConfig,
+		})
 	} else {
 		// Removing keyboard if there is none.
 		msgConfig := tgbotapi.NewMessage(cid, ">")
-		msgConfig.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
-		ch[1] = msgConfig
+		msgConfig.ReplyMarkup = NewReply().
+			WithRemove(true).
+			ToApi()
+			ret = append(ret, &SendConfig{Message: &msgConfig})
 	}
 
-	for _, m := range ch {
-		if m != nil {
-			msg, err := bot.Api.Send(m)
-			if err != nil {
-				return msgs, err
-			}
-			msgs = append(msgs, &msg)
-		}
-	}
-
-	return msgs, nil
+	return ret, nil
 }

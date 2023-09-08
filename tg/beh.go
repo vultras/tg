@@ -8,7 +8,6 @@ type Behaviour struct {
 	PreStart *action
 	Init      *action
 	Screens   ScreenMap
-	Keyboards KeyboardMap
 	Commands  CommandMap
 }
 
@@ -16,7 +15,6 @@ type Behaviour struct {
 func NewBehaviour() *Behaviour {
 	return &Behaviour{
 		Screens:   make(ScreenMap),
-		Keyboards: make(KeyboardMap),
 		Commands:  make(CommandMap),
 	}
 }

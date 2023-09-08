@@ -61,7 +61,7 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 				}
 			} else {
 				// Simple messages handling.
-				kbd := screen.Keyboard
+				kbd := screen.Reply
 				if kbd == nil {
 					if c.readingUpdate {
 						c.updates <- u
@@ -102,7 +102,7 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 			if err != nil {
 				panic(err)
 			}
-			kbd := screen.InlineKeyboard
+			kbd := screen.Inline
 			if kbd == nil {
 				if c.readingUpdate {
 					c.updates <- u
@@ -160,14 +160,16 @@ func (c *context) ReadTextMessage() (string, error) {
 	return u.Message.Text, nil
 }
 
-// Sends to the user specified text.
-func (c *context) Send(v any) (*Message, error) {
+// Sends to the Sendable object.
+func (c *context) Send(v Sendable) (*Message, error) {
 	return c.Bot.Send(c.Session.Id, v)
 }
 
 // Sends the formatted with fmt.Sprintf message to the user.
 func (c *context) Sendf(format string, v ...any) (*Message, error) {
-	msg, err := c.Send(fmt.Sprintf(format, v...))
+	msg, err := c.Send(NewMessage(
+		c.Session.Id, fmt.Sprintf(format, v...),
+	))
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +226,7 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	screen := c.Bot.behaviour.Screens[screenId]
 	c.prevScreen = c.curScreen
 	c.curScreen = screen
-	screen.Render(c.Session.Id, c.Bot)
+	c.Bot.Render(c.Session.Id, screen)
 	if screen.Action != nil {
 		c.run(screen.Action, c.Update)
 	}
