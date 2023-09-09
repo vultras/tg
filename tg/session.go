@@ -16,7 +16,7 @@ type Session struct {
 	Id SessionId
 	// True if the session started.
 	// (got the '/start' command.
-	Started bool
+	started bool
 	// Custom value for each user.
 	Value any
 }

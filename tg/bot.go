@@ -187,7 +187,6 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 				ctx := &context{
 					Bot:     bot,
 					Session: session,
-					updates: make(chan *Update),
 				}
 				chn := make(chan *Update)
 				chans[sid] = chn
@@ -201,7 +200,6 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 			ctx := &context{
 				Bot:     bot,
 				Session: lsession,
-				updates: make(chan *Update),
 			}
 			chn := make(chan *Update)
 			chans[sid] = chn

@@ -16,11 +16,31 @@ type UserData struct {
 	Counter int
 }
 
+type MutateMessageWidget struct {
+	Mutate func(string) string
+}
+
+func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
+	ret := &MutateMessageWidget{}
+	ret.Mutate = fn
+	return ret
+}
+
+func (w *MutateMessageWidget) Serve(c *tg.Context, updates chan *tg.Update) {
+	for u := range updates {
+		if u.Message == nil {
+			continue
+		}
+		text := u.Message.Text
+		c.Sendf("%s", w.Mutate(text))
+	}
+}
+
 var (
 	startScreenButton = tg.NewButton("🏠 To the start screen").
 				ScreenChange("start")
 
-	incDecKeyboard = tg.NewInline().Row(
+	incDecKeyboard = tg.NewReply().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
 			d := c.Session.Value.(*UserData)
 			d.Counter++
@@ -38,12 +58,12 @@ var (
 	navKeyboard = tg.NewReply().
 			WithOneTime(true).
 			Row(
-			tg.NewButton("Inc/Dec").ScreenChange("inc/dec"),
+			tg.NewButton("Inc/Dec").ScreenChange("start/inc-dec"),
 		).Row(
-		tg.NewButton("Upper case").ScreenChange("upper-case"),
-		tg.NewButton("Lower case").ScreenChange("lower-case"),
+		tg.NewButton("Upper case").ScreenChange("start/upper-case"),
+		tg.NewButton("Lower case").ScreenChange("start/lower-case"),
 	).Row(
-		tg.NewButton("Send location").ScreenChange("send-location"),
+		tg.NewButton("Send location").ScreenChange("start/send-location"),
 	)
 
 	sendLocationKeyboard = tg.NewReply().
@@ -64,7 +84,7 @@ var (
 							l.Heading,
 						)
 					} else {
-						_, err = c.Sendf("Somehow wrong location was sent")
+						_, err = c.Sendf("Somehow location was not sent")
 					}
 					if err != nil {
 						c.Sendf("%q", err)
@@ -89,62 +109,69 @@ var beh = tg.NewBehaviour().
 	WithPreStartFunc(func(c *tg.Context){
 		c.Sendf("Please, use the /start command to start the bot")
 	}).WithScreens(
-	tg.NewScreen("start").
-		WithText(
-			"The bot started!"+
-				" The bot is supposed to provide basic"+
-				" understand of how the API works, so just"+
-				" horse around a bit to guess everything out"+
-				" by yourself!",
-		).WithReply(navKeyboard).
-		// The inline keyboard with link to GitHub page.
-		WithInline(
-			tg.NewInline().Row(
-				tg.NewButton("GoT Github page").
-					WithUrl("https://github.com/mojosa-software/got"),
+		tg.NewScreen("start", tg.NewPage(
+				"The bot started!",
+			).WithInline(
+				tg.NewInline().Row(
+					tg.NewButton("GoT Github page").
+						WithUrl("https://github.com/mojosa-software/got"),
+				),
+			).WithReply(
+				navKeyboard,
+			),
+		),
+		tg.NewScreen("start/inc-dec", tg.NewPage(
+				"The screen shows how "+
+					"user separated data works "+
+					"by saving the counter for each of users "+
+					"separately. ",
+			).WithReply(
+				incDecKeyboard,
+			).ActionFunc(func(c *tg.Context) {
+				// The function will be calleb before serving page.
+				d := c.Session.Value.(*UserData)
+				c.Sendf("Current counter value = %d", d.Counter)
+			}),
+		),
+
+		tg.NewScreen("start/upper-case", tg.NewPage(
+				"Type text and the bot will send you the upper case version to you",
+			).WithReply(
+				navToStartKeyboard,
+			).WithSub(
+				NewMutateMessageWidget(strings.ToUpper),
 			),
 		),
 
-	tg.NewScreen("inc/dec").
-		WithText(
-			"The screen shows how "+
-				"user separated data works "+
-				"by saving the counter for each of users "+
-				"separately. ",
-		).
-		WithReply(&tg.ReplyKeyboard{Keyboard: incDecKeyboard.Keyboard}).
-		// The function will be called when reaching the screen.
-		ActionFunc(func(c *tg.Context) {
-			d := c.Session.Value.(*UserData)
-			c.Sendf("Current counter value = %d", d.Counter)
-		}),
+		tg.NewScreen("start/lower-case", tg.NewPage(
+				"Type text and the bot will send you the lower case version",
+			).WithReply(
+				navToStartKeyboard,
+			).WithSub(
+				NewMutateMessageWidget(strings.ToLower),
+			),
+		),
 
-	tg.NewScreen("upper-case").
-		WithText("Type text and the bot will send you the upper case version to you").
-		WithReply(navToStartKeyboard).
-		ActionFunc(mutateMessage(strings.ToUpper)),
-
-	tg.NewScreen("lower-case").
-		WithText("Type text and the bot will send you the lower case version").
-		WithReply(navToStartKeyboard).
-		ActionFunc(mutateMessage(strings.ToLower)),
-
-	tg.NewScreen("send-location").
-		WithText("Send your location and I will tell where you are!").
-		WithReply(sendLocationKeyboard).
-		WithInline(
-			tg.NewInline().Row(
-				tg.NewButton("Check").
-					WithData("check").
-					ActionFunc(func(a *tg.Context) {
-						d := a.Session.Value.(*UserData)
-						a.Sendf("Counter = %d", d.Counter)
+		tg.NewScreen("start/send-location", tg.NewPage(
+				"Send your location and I will tell where you are!",
+			).WithReply(
+				sendLocationKeyboard,
+			).WithInline(
+				tg.NewInline().Row(
+					tg.NewButton(
+						"Check",
+					).WithData(
+						"check",
+					).ActionFunc(func(c *tg.Context) {
+							d := c.Session.Value.(*UserData)
+							c.Sendf("Counter = %d", d.Counter)
 					}),
+				),
 			),
 		),
 ).WithCommands(
 	tg.NewCommand("start").
-		Desc("start the bot").
+		Desc("start or restart the bot or move to the start screen").
 		ActionFunc(func(c *tg.Context){
 			c.ChangeScreen("start")
 		}),
@@ -156,12 +183,12 @@ var beh = tg.NewBehaviour().
 	tg.NewCommand("read").
 		Desc("reads a string and sends it back").
 		ActionFunc(func(c *tg.Context) {
-			c.Sendf("Type some text:")
+			/*c.Sendf("Type some text:")
 			msg, err := c.ReadTextMessage()
 			if err != nil {
 				return
 			}
-			c.Sendf("You typed %q", msg)
+			c.Sendf("You typed %q", msg)*/
 		}),
 	tg.NewCommand("image").
 		Desc("sends a sample image").
@@ -176,24 +203,6 @@ var beh = tg.NewBehaviour().
 			c.Sendf("My name is %q", bd.Name)
 		}),
 )
-
-func mutateMessage(fn func(string) string) tg.ActionFunc {
-	return func(c *tg.Context) {
-		for {
-			msg, err := c.ReadTextMessage()
-			if err == tg.NotAvailableErr {
-				break
-			} else if err != nil {
-				panic(err)
-			}
-
-			_, err = c.Sendf("%s", fn(msg))
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-}
 
 var gBeh = tg.NewGroupBehaviour().
 	InitFunc(func(c *tg.GC) {

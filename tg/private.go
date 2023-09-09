@@ -3,17 +3,15 @@ package tg
 import (
 	"fmt"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type context struct {
 	Session *Session
+	// To reach the bot abilities inside callbacks.
 	Bot     *Bot
-	updates chan *Update
-	// Is true if currently reading the Update.
-	readingUpdate bool
-
-	curScreen, prevScreen *Screen
+	widgetUpdates chan *Update
+	CurScreen, PrevScreen *Screen
 }
 
 // The type represents way to interact with user in
@@ -29,102 +27,46 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 		c.run(beh.Init, nil)
 	}
 	for u := range updates {
-		var act Action
-		screen := c.curScreen
 		// The part is added to implement custom update handling.
-		if u.Message != nil {
-			if !session.Started {
-				if u.Message.IsCommand() &&
-						u.Message.Command() == "start" {
-					// Special treatment for the "/start"
-					// command.
-					session.Started = true
-					cmdName := CommandName("start")
-					cmd, ok := beh.Commands[cmdName]
-					if ok {
-						act = cmd.Action
-					} else {
-						// Some usage.
-					}
-				} else {
-					// Prestart handling.
-					act = preStart
-				}
-			} else if u.Message.IsCommand() {
-				// Command handling.
-				cmdName := CommandName(u.Message.Command())
+		if !session.started {
+			if u.Message.IsCommand() &&
+					u.Message.Command() == "start" {
+				// Special treatment for the "/start"
+				// command.
+				session.started = true
+				cmdName := CommandName("start")
 				cmd, ok := beh.Commands[cmdName]
 				if ok {
-					act = cmd.Action
+					if cmd.Action != nil {
+						c.run(cmd.Action, u)
+					}
 				} else {
 					// Some usage.
 				}
 			} else {
-				// Simple messages handling.
-				kbd := screen.Reply
-				if kbd == nil {
-					if c.readingUpdate {
-						c.updates <- u
-					}
-					continue
-				}
-				btns := kbd.buttonMap()
-				text := u.Message.Text
-				btn, ok := btns[text]
-				if !ok {
-					if u.Message.Location != nil {
-						for _, b := range btns {
-							if b.SendLocation {
-								btn = b
-								ok = true
-							}
-						}
-					} else if c.readingUpdate {
-						// Skipping the update sending it to
-						// the reading goroutine.
-						c.updates <- u
-						continue
-					}
-				}
-
-				if ok {
-					act = btn.Action
-				}
-			}
-		} else if u.CallbackQuery != nil && session.Started {
-			cb := tgbotapi.NewCallback(
-				u.CallbackQuery.ID,
-				u.CallbackQuery.Data,
-			)
-			data := u.CallbackQuery.Data
-
-			_, err := c.Bot.Api.Request(cb)
-			if err != nil {
-				panic(err)
-			}
-			kbd := screen.Inline
-			if kbd == nil {
-				if c.readingUpdate {
-					c.updates <- u
-				}
-				continue
+				// Prestart handling.
+				c.run(preStart, u)
 			}
 
-			btns := kbd.buttonMap()
-			btn, ok := btns[data]
-			if !ok && c.readingUpdate {
-				c.updates <- u
-				continue
-			}
-			if !ok {
-				c.Sendf("%q", btns)
-				continue
-			}
-			act = btn.Action
+			continue
 		}
-		if act != nil {
-			c.run(act, u)
-		}
+
+		if u.Message != nil && u.Message.IsCommand() {
+			// Command handling.
+			cmdName := CommandName(u.Message.Command())
+			cmd, ok := beh.Commands[cmdName]
+			if ok {
+				if cmd.Action != nil {
+					c.run(cmd.Action, u)
+				}
+			} else {
+				// Some usage.
+			}
+			continue
+		} 
+		
+		// The standard thing - send messages to widgets.
+		c.widgetUpdates <- u
 	}
 }
 
@@ -135,29 +77,8 @@ func (c *context) run(a Action, u *Update) {
 	})
 }
 
-// Returns the next update ignoring current screen.
-func (c *context) ReadUpdate() (*Update, error) {
-	c.readingUpdate = true
-	u := <-c.updates
-	c.readingUpdate = false
-	if u == nil {
-		return nil, NotAvailableErr
-	}
-
-	return u, nil
-}
-
-// Returns the next text message that the user sends.
-func (c *context) ReadTextMessage() (string, error) {
-	u, err := c.ReadUpdate()
-	if err != nil {
-		return "", err
-	}
-	if u.Message == nil {
-		return "", WrongUpdateType{}
-	}
-
-	return u.Message.Text, nil
+func (c *context) Render(v Renderable) ([]*Message, error) {
+	return c.Bot.Render(c.Session.Id, v)
 }
 
 // Sends to the Sendable object.
@@ -217,19 +138,36 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	// Stop the reading by sending the nil,
 	// since we change the screen and
 	// current goroutine needs to be stopped.
-	if c.readingUpdate {
-		c.updates <- nil
-	}
+	// if c.readingUpdate {
+		// c.Updates <- nil
+	// }
 
 	// Getting the screen and changing to
-	// then executing its action.
+	// then executing its widget.
 	screen := c.Bot.behaviour.Screens[screenId]
-	c.prevScreen = c.curScreen
-	c.curScreen = screen
-	c.Bot.Render(c.Session.Id, screen)
-	if screen.Action != nil {
-		c.run(screen.Action, c.Update)
+	c.PrevScreen = c.CurScreen
+	c.CurScreen = screen
+
+	// Making the new channel for the widget.
+	if c.widgetUpdates != nil {
+		close(c.widgetUpdates)
 	}
+	c.widgetUpdates = make(chan *Update)
+	if screen.Widget != nil {
+		// Running the widget if the screen has one.
+		go screen.Widget.Serve(c, c.widgetUpdates)
+	} else {
+		// Skipping updates if there is no
+		// widget to handle them.
+		go func() {
+			for _ = range c.widgetUpdates {}
+		}()
+	}
+
+	//c.Bot.Render(c.Session.Id, screen)
+	//if screen.Action != nil {
+		//c.run(screen.Action, c.Update)
+	//}
 
 	return nil
 }
