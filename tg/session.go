@@ -18,7 +18,7 @@ type Session struct {
 	// (got the '/start' command.
 	started bool
 	// Custom value for each user.
-	Value any
+	Data  any
 }
 
 // Return new empty session with specified user ID.
@@ -41,7 +41,7 @@ func (sm SessionMap) Add(sid SessionId) {
 type GroupSession struct {
 	Id SessionId
 	// Information for each user in the group.
-	Value any
+	Data any
 }
 
 // Returns new empty group session with specified group and user IDs.

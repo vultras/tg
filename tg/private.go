@@ -100,7 +100,11 @@ func (c *context) Sendf(format string, v ...any) (*Message, error) {
 // Interface to interact with the user.
 type Context struct {
 	*context
+	// The update that called the Context usage.
 	*Update
+	// Used as way to provide outer values redirection
+	// into widgets and actions 
+	Arg any
 }
 
 // Customized actions for the bot.

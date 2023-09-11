@@ -12,7 +12,7 @@ type BotData struct {
 	Name string
 }
 
-type UserData struct {
+type SessionData struct {
 	Counter int
 }
 
@@ -36,18 +36,22 @@ func (w *MutateMessageWidget) Serve(c *tg.Context, updates chan *tg.Update) {
 	}
 }
 
+func ExtractSessionData(c *tg.Context) *SessionData {
+	return c.Session.Data.(*SessionData)
+}
+
 var (
 	startScreenButton = tg.NewButton("🏠 To the start screen").
 				ScreenChange("start")
 
 	incDecKeyboard = tg.NewReply().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
-			d := c.Session.Value.(*UserData)
+			d := ExtractSessionData(c)
 			d.Counter++
 			c.Sendf("%d", d.Counter)
 		}),
 		tg.NewButton("-").ActionFunc(func(c *tg.Context) {
-			d := c.Session.Value.(*UserData)
+			d := ExtractSessionData(c)
 			d.Counter--
 			c.Sendf("%d", d.Counter)
 		}),
@@ -103,7 +107,7 @@ var (
 var beh = tg.NewBehaviour().
 	WithInitFunc(func(c *tg.Context) {
 		// The session initialization.
-		c.Session.Value = &UserData{}
+		c.Session.Data = &SessionData{}
 
 	}). // On any message update before the bot created session.
 	WithPreStartFunc(func(c *tg.Context){
@@ -129,7 +133,7 @@ var beh = tg.NewBehaviour().
 				incDecKeyboard,
 			).ActionFunc(func(c *tg.Context) {
 				// The function will be calleb before serving page.
-				d := c.Session.Value.(*UserData)
+				d := ExtractSessionData(c)
 				c.Sendf("Current counter value = %d", d.Counter)
 			}),
 		),
@@ -163,7 +167,7 @@ var beh = tg.NewBehaviour().
 					).WithData(
 						"check",
 					).ActionFunc(func(c *tg.Context) {
-							d := c.Session.Value.(*UserData)
+							d := ExtractSessionData(c)
 							c.Sendf("Counter = %d", d.Counter)
 					}),
 				),
@@ -212,7 +216,7 @@ var gBeh = tg.NewGroupBehaviour().
 			c.Send("Hello, World!")
 		}),
 		tg.NewGroupCommand("mycounter").ActionFunc(func(c *tg.GC) {
-			d := c.Session().Value.(*UserData)
+			d := c.Session().Data.(*SessionData)
 			c.Sendf("Your counter value is %d", d.Counter)
 		}),
 	)
