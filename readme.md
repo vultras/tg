@@ -1,4 +1,4 @@
-# got
+# got v0.1.0
 
 Go Telegram.
 
