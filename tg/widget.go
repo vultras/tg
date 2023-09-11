@@ -12,7 +12,20 @@ type Widget interface {
 	// widget MUST end its work.
 	// Mostly made by looping over the
 	// updates range.
-	Serve(*Context, chan *Update)
+	Serve(*Context, chan *Update) error
+}
+
+// Implementing the interface provides 
+type DynamicWidget interface {
+	MakeWidget() Widget
+}
+
+// The function that implements the Widget
+// interface.
+type WidgetFunc func(*Context, chan *Update)
+
+func (wf WidgetFunc) Serve(c *Context, updates chan *Update){
+	wf(c, updates)
 }
 
 // The basic widget to provide keyboard functionality
@@ -64,10 +77,10 @@ func (p *Page) WithSub(sub Widget) *Page {
 
 func (p *Page) Serve(
 	c *Context, updates chan *Update,
-) {
+) error {
 	msgs, err := c.Render(p)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// The inline message is always returned
@@ -128,7 +141,7 @@ func (p *Page) Serve(
 
 			_, err := c.Bot.Api.Request(cb)
 			if err != nil {
-				panic(err)
+				return err
 			}
 			kbd := p.Inline
 			if kbd == nil {
@@ -156,6 +169,7 @@ func (p *Page) Serve(
 			c.run(act, u)
 		} 
 	}
+	return nil
 }
 
 func (s *Page) Render(

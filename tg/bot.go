@@ -2,6 +2,7 @@ package tg
 
 import (
 	"errors"
+	"sort"
 
 	//"fmt"
 
@@ -14,6 +15,8 @@ type User = tgbotapi.User
 
 // The wrapper around Telegram API.
 type Bot struct {
+	// Custom data value.
+	Data any
 	Api *tgbotapi.BotAPI
 	Me  *User
 	// Private bot behaviour.
@@ -24,7 +27,6 @@ type Bot struct {
 	channelBehaviour *ChannelBehaviour
 	sessions         SessionMap
 	groupSessions    GroupSessionMap
-	value            any
 	
 }
 
@@ -38,19 +40,6 @@ func NewBot(token string) (*Bot, error) {
 	return &Bot{
 		Api: bot,
 	}, nil
-}
-
-// Set the custom global value for the bot,
-// so it can be accessed from the callback
-// functions.
-func (bot *Bot) WithValue(v any) *Bot {
-	bot.value = v
-	return bot
-}
-
-// Get the global bot value.
-func (bot *Bot) Value() any {
-	return bot.value
 }
 
 func (bot *Bot) Debug(debug bool) *Bot {
@@ -127,6 +116,40 @@ func (b *Bot) WithGroupSessions(sessions GroupSessionMap) *Bot {
 	return b
 }
 
+// Setting the command on the user side.
+func (bot *Bot) setCommands(
+	scope tgbotapi.BotCommandScope,
+	cmdMap map[CommandName] BotCommander,
+) {
+	// First the private commands.
+	names := []string{}
+	for name := range cmdMap {
+		names = append(names, string(name))
+	}
+	sort.Strings([]string(names))
+
+	cmds := []BotCommander{}
+	for _, name := range names {
+		cmds = append(
+			cmds,
+			cmdMap[CommandName(name)],
+		)
+	}
+
+	botCmds := []tgbotapi.BotCommand{}
+	for _, cmd := range cmds {
+		botCmds = append(botCmds, cmd.ToApi())
+	}
+
+	//tgbotapi.NewBotCommandScopeAllPrivateChats(),
+	cfg := tgbotapi.NewSetMyCommandsWithScope(
+		scope,
+		botCmds...,
+	)
+
+	bot.Api.Request(cfg)
+}
+
 // Run the bot with the Behaviour.
 func (bot *Bot) Run() error {
 	if bot.behaviour == nil &&
@@ -139,12 +162,28 @@ func (bot *Bot) Run() error {
 	handles := make(map[string]chan *Update)
 
 	if bot.behaviour != nil {
+		commanders := make(map[CommandName] BotCommander)
+		for k, v := range bot.behaviour.Commands {
+			commanders[k] = v
+		}
+		bot.setCommands(
+			tgbotapi.NewBotCommandScopeAllPrivateChats(),
+			commanders,
+		)
 		chn := make(chan *Update)
 		handles["private"] = chn
 		go bot.handlePrivate(chn)
 	}
 
 	if bot.groupBehaviour != nil {
+		commanders := make(map[CommandName] BotCommander)
+		for k, v := range bot.groupBehaviour.Commands {
+			commanders[k] = v
+		}
+		bot.setCommands(
+			tgbotapi.NewBotCommandScopeAllGroupChats(),
+			commanders,
+		)
 		chn := make(chan *Update)
 		handles["group"] = chn
 		handles["supergroup"] = chn

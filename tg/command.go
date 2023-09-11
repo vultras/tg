@@ -3,10 +3,13 @@ package tg
 import (
 	//"flag"
 
-	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type Message = apix.Message
+type BotCommander interface {
+	ToApi() tgbotapi.BotCommand
+}
+type Message = tgbotapi.Message
 type CommandName string
 
 type Command struct {
@@ -29,6 +32,13 @@ func (c *Command) WithAction(a Action) *Command {
 
 func (c *Command) ActionFunc(af ActionFunc) *Command {
 	return c.WithAction(af)
+}
+
+func (c *Command) ToApi() tgbotapi.BotCommand {
+	ret := tgbotapi.BotCommand{}
+	ret.Command = string(c.Name)
+	ret.Description = c.Description
+	return ret
 }
 
 func (c *Command) Desc(desc string) *Command {
@@ -61,4 +71,11 @@ func (cmd *GroupCommand) ActionFunc(fn GroupActionFunc) *GroupCommand {
 func (cmd *GroupCommand) Desc(desc string) *GroupCommand {
 	cmd.Description = desc
 	return cmd
+}
+
+func (c *GroupCommand) ToApi() tgbotapi.BotCommand {
+	ret := tgbotapi.BotCommand{}
+	ret.Command = string(c.Name)
+	ret.Description = c.Description
+	return ret
 }

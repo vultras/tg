@@ -26,7 +26,7 @@ func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
 	return ret
 }
 
-func (w *MutateMessageWidget) Serve(c *tg.Context, updates chan *tg.Update) {
+func (w *MutateMessageWidget) Serve(c *tg.Context, updates chan *tg.Update) error {
 	for u := range updates {
 		if u.Message == nil {
 			continue
@@ -34,6 +34,7 @@ func (w *MutateMessageWidget) Serve(c *tg.Context, updates chan *tg.Update) {
 		text := u.Message.Text
 		c.Sendf("%s", w.Mutate(text))
 	}
+	return nil
 }
 
 func ExtractSessionData(c *tg.Context) *SessionData {
@@ -173,47 +174,47 @@ var beh = tg.NewBehaviour().
 				),
 			),
 		),
-).WithCommands(
-	tg.NewCommand("start").
-		Desc("start or restart the bot or move to the start screen").
-		ActionFunc(func(c *tg.Context){
-			c.ChangeScreen("start")
-		}),
-	tg.NewCommand("hello").
-		Desc("sends the 'Hello, World!' message back").
-		ActionFunc(func(c *tg.Context) {
-			c.Sendf("Hello, World!")
-		}),
-	tg.NewCommand("read").
-		Desc("reads a string and sends it back").
-		ActionFunc(func(c *tg.Context) {
-			/*c.Sendf("Type some text:")
-			msg, err := c.ReadTextMessage()
-			if err != nil {
-				return
-			}
-			c.Sendf("You typed %q", msg)*/
-		}),
-	tg.NewCommand("image").
-		Desc("sends a sample image").
-		ActionFunc(func(c *tg.Context) {
-			img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
-			c.Send(img)
-		}),
-	tg.NewCommand("botname").
-		Desc("get the bot name").
-		ActionFunc(func(c *tg.Context) {
-			bd := c.Bot.Value().(*BotData)
-			c.Sendf("My name is %q", bd.Name)
-		}),
-)
+	).WithCommands(
+		tg.NewCommand("start").
+			Desc("start or restart the bot or move to the start screen").
+			ActionFunc(func(c *tg.Context){
+				c.ChangeScreen("start")
+			}),
+		tg.NewCommand("hello").
+			Desc("sends the 'Hello, World!' message back").
+			ActionFunc(func(c *tg.Context) {
+				c.Sendf("Hello, World!")
+			}),
+		tg.NewCommand("read").
+			Desc("reads a string and sends it back").
+			ActionFunc(func(c *tg.Context) {
+				/*c.Sendf("Type some text:")
+				msg, err := c.ReadTextMessage()
+				if err != nil {
+					return
+				}
+				c.Sendf("You typed %q", msg)*/
+			}),
+		tg.NewCommand("image").
+			Desc("sends a sample image").
+			ActionFunc(func(c *tg.Context) {
+				img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
+				c.Send(img)
+			}),
+		tg.NewCommand("botname").
+			Desc("get the bot name").
+			ActionFunc(func(c *tg.Context) {
+				bd := c.Bot.Data.(*BotData)
+				c.Sendf("My name is %q", bd.Name)
+			}),
+	)
 
 var gBeh = tg.NewGroupBehaviour().
 	InitFunc(func(c *tg.GC) {
 	}).
 	WithCommands(
 		tg.NewGroupCommand("hello").ActionFunc(func(c *tg.GC) {
-			c.Send("Hello, World!")
+			c.Sendf("Hello, World!")
 		}),
 		tg.NewGroupCommand("mycounter").ActionFunc(func(c *tg.GC) {
 			d := c.Session().Data.(*SessionData)
@@ -231,11 +232,15 @@ func main() {
 	bot = bot.
 		WithBehaviour(beh).
 		WithGroupBehaviour(gBeh).
-		WithValue(&BotData{
-			Name: "Jay",
-		}).
 		Debug(true)
 
+	bot.Data = &BotData{
+		Name: "Jay",
+	}
+
 	log.Printf("Authorized on account %s", bot.Api.Self.UserName)
-	bot.Run()
+	err = bot.Run()
+	if err != nil {
+		panic(err)
+	}
 }

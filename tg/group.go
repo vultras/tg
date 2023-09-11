@@ -3,7 +3,7 @@ package tg
 import (
 	"fmt"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 // Customized actions for the group behaviour.
@@ -56,7 +56,12 @@ func (c *groupContext) handleUpdateChan(updates chan *Update) {
 				cmdName := CommandName(msg.Command())
 
 				// Skipping the commands sent not to us.
-				atName := msg.CommandWithAt()[len(cmdName)+1:]
+				withAt := msg.CommandWithAt()
+				if len(cmdName) == len(withAt) {
+					continue
+				}
+
+				atName := withAt[len(cmdName)+1:]
 				if c.Bot.Me.UserName != atName {
 					continue
 				}
@@ -74,16 +79,20 @@ func (c *groupContext) handleUpdateChan(updates chan *Update) {
 	}
 }
 
-func (c *groupContext) Sendf(format string, v ...any) error {
-	return c.Send(fmt.Sprintf(format, v...))
+func (c *groupContext) Sendf(
+	format string,
+	v ...any,
+) (*Message, error) {
+	msg, err := c.Send(NewMessage(
+		c.Session.Id, fmt.Sprintf(format, v...),
+	))
+	if err != nil {
+		return nil, err
+	}
+	return msg, err
 }
 
 // Sends into the chat specified values converted to strings.
-func (c *groupContext) Send(v ...any) error {
-	msg := tgbotapi.NewMessage(
-		c.Session.Id.ToApi(),
-		fmt.Sprint(v...),
-	)
-	_, err := c.Bot.Api.Send(msg)
-	return err
+func (c *groupContext) Send(v Sendable) (*Message, error) {
+	return c.Bot.Send(c.Session.Id, v)
 }

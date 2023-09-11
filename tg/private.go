@@ -11,7 +11,7 @@ type context struct {
 	// To reach the bot abilities inside callbacks.
 	Bot     *Bot
 	widgetUpdates chan *Update
-	CurScreen, PrevScreen *Screen
+	curScreen, prevScreen *Screen
 }
 
 // The type represents way to interact with user in
@@ -71,10 +71,7 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 }
 
 func (c *context) run(a Action, u *Update) {
-	go a.Act(&Context{
-		context: c,
-		Update:  u,
-	})
+	a.Act(&Context{context: c, Update:  u})
 }
 
 func (c *context) Render(v Renderable) ([]*Message, error) {
@@ -149,8 +146,8 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	// Getting the screen and changing to
 	// then executing its widget.
 	screen := c.Bot.behaviour.Screens[screenId]
-	c.PrevScreen = c.CurScreen
-	c.CurScreen = screen
+	c.prevScreen = c.curScreen
+	c.curScreen = screen
 
 	// Making the new channel for the widget.
 	if c.widgetUpdates != nil {

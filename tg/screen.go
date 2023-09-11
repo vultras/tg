@@ -6,10 +6,14 @@ type ScreenId string
 // Screen statement of the bot.
 // Mostly what buttons to show.
 type Screen struct {
+	// Unique identifer to change to the screen
+	// via Context.ChangeScreen method.
 	Id ScreenId
 	// The widget to run when reaching the screen.
 	Widget Widget
 
+	// Needs implementation later.
+	Dynamic DynamicWidget
 }
 
 // Map structure for the screens.
@@ -21,5 +25,10 @@ func NewScreen(id ScreenId, widget Widget) *Screen {
 		Id: id,
 		Widget: widget,
 	}
+}
+
+func (s *Screen) WithDynamic(dynamic DynamicWidget) *Screen {
+	s.Dynamic = dynamic
+	return s
 }
 
