@@ -141,9 +141,7 @@ func (p *Page) Serve(
 				act = kbd.Action
 			}
 		}
-		if act != nil {
-			c.run(act, u)
-		} 
+		c.Run(act, u)
 	}
 	return nil
 }

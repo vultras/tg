@@ -10,9 +10,11 @@ type context struct {
 	Session *Session
 	// To reach the bot abilities inside callbacks.
 	Bot     *Bot
-	widgetUpdates chan *Update
-	curScreen, prevScreen *Screen
+	skippedUpdates chan *Update
+	// Current screen ID.
+	screenId, prevScreenId ScreenId
 }
+
 
 // The type represents way to interact with user in
 // handling functions. Is provided to Act() function always.
@@ -20,90 +22,55 @@ type context struct {
 // Goroutie function to handle each user.
 func (c *context) handleUpdateChan(updates chan *Update) {
 	beh := c.Bot.behaviour
-
-	session := c.Session
-	preStart := beh.PreStart
 	if beh.Init != nil {
 		c.run(beh.Init, nil)
 	}
-	var cmdUpdates chan *Update
-	for u := range updates {
-		// The part is added to implement custom update handling.
-		if !session.started {
-			if u.Message.IsCommand() &&
-					u.Message.Command() == "start" {
-				// Special treatment for the "/start"
-				// command.
-				session.started = true
-				cmdName := CommandName("start")
-				cmd, ok := beh.Commands[cmdName]
-				if ok {
-					if cmd.Action != nil {
-						c.run(cmd.Action, u)
-					}
-				} else {
-					// Some usage.
-				}
-			} else {
-				// Prestart handling.
-				c.run(preStart, u)
-			}
-
-			continue
-		}
-
-		if u.Message != nil && u.Message.IsCommand() {
-			// Command handling.
-			cmdName := CommandName(u.Message.Command())
-			cmd, ok := beh.Commands[cmdName]
-			if ok {
-				if cmd.Action != nil {
-					c.run(cmd.Action, u)
-				}
-				if cmd.Widget != nil {
-					if cmdUpdates != nil {
-						close(cmdUpdates)
-					}
-					cmdUpdates = make(chan *Update)
-					go func() {
-						cmd.Widget.Serve(
-							&Context{context: c, Update: u},
-							cmdUpdates,
-						)
-						close(cmdUpdates)
-						cmdUpdates = nil
-					}()
-				}
-			} else {
-				// Some usage.
-			}
-			continue
-		}
-		
-		// The standard thing - send messages to widgets.
-		if cmdUpdates != nil {
-			cmdUpdates <- u
-		} else {
-			c.widgetUpdates <- u
-		}
-	}
+	beh.Root.Serve(&Context{
+		context: c,
+	}, updates)
 }
+
 
 func (c *context) run(a Action, u *Update) {
 	a.Act(&Context{context: c, Update:  u})
 }
 
-func (c *context) Render(v Renderable) ([]*Message, error) {
+func (c *Context) ScreenId() ScreenId {
+	return c.screenId
+}
+
+func (c *Context) PrevScreenId() ScreenId {
+	return c.prevScreenId
+}
+
+func (c *Context) Run(a Action, u *Update) {
+	if a != nil {
+		a.Act(&Context{context: c.context, Update: u})
+	}
+}
+
+// Only for the root widget usage.
+// Skip the update sending it down to
+// the underlying widget.
+func (c *Context) Skip(u *Update) {
+	if c.skippedUpdates != nil {
+		c.skippedUpdates <- u
+	}
+}
+
+// Renders the Renedrable object to the side of client
+// and returns the messages it sent.
+func (c *Context) Render(v Renderable) ([]*Message, error) {
 	return c.Bot.Render(c.Session.Id, v)
 }
 
 // Sends to the Sendable object.
-func (c *context) Send(v Sendable) (*Message, error) {
+func (c *Context) Send(v Sendable) (*Message, error) {
 	return c.Bot.Send(c.Session.Id, v)
 }
 
 // Sends the formatted with fmt.Sprintf message to the user.
-func (c *context) Sendf(format string, v ...any) (*Message, error) {
+func (c *Context) Sendf(format string, v ...any) (*Message, error) {
 	msg, err := c.Send(NewMessage(
 		c.Session.Id, fmt.Sprintf(format, v...),
 	))
@@ -165,29 +132,22 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	// Getting the screen and changing to
 	// then executing its widget.
 	screen := c.Bot.behaviour.Screens[screenId]
-	c.prevScreen = c.curScreen
-	c.curScreen = screen
+	c.prevScreenId = c.screenId
+	c.screenId = screenId
 
 	// Making the new channel for the widget.
-	if c.widgetUpdates != nil {
-		close(c.widgetUpdates)
+	if c.skippedUpdates != nil {
+		close(c.skippedUpdates)
 	}
-	c.widgetUpdates = make(chan *Update)
+	c.skippedUpdates = make(chan *Update)
 	if screen.Widget != nil {
 		// Running the widget if the screen has one.
-		go screen.Widget.Serve(c, c.widgetUpdates)
-	} else {
-		// Skipping updates if there is no
-		// widget to handle them.
 		go func() {
-			for _ = range c.widgetUpdates {}
+			screen.Widget.Serve(c, c.skippedUpdates)
 		}()
+	} else {
+		panic("no widget defined for the screen")
 	}
-
-	//c.Bot.Render(c.Session.Id, screen)
-	//if screen.Action != nil {
-		//c.run(screen.Action, c.Update)
-	//}
 
 	return nil
 }

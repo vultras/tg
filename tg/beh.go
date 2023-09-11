@@ -5,18 +5,22 @@ package tg
 
 // The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
-	PreStart *action
+	Root Widget
 	Init      *action
 	Screens   ScreenMap
-	Commands  CommandMap
 }
 
 // Returns new empty behaviour.
 func NewBehaviour() *Behaviour {
 	return &Behaviour{
-		Screens:   make(ScreenMap),
-		Commands:  make(CommandMap),
+		Screens: make(ScreenMap),
 	}
+}
+
+// Set the root widget. Mostly the CommandWidget is used.
+func (b *Behaviour) WithRoot(root Widget) *Behaviour {
+	b.Root = root
+	return b
 }
 
 // The Action will be called on session creation,
@@ -31,20 +35,6 @@ func (b *Behaviour) WithInitFunc(
 	fn ActionFunc,
 ) *Behaviour {
 	return b.WithInit(fn)
-}
-
-// Defines pre-start action.
-// E. g. when the user has not type the "/start" command.
-// Mostly used to send the "/start" command back
-// with some warning.
-func (b *Behaviour) WithPreStart(a Action) *Behaviour {
-	b.PreStart = newAction(a)
-	return b
-}
-
-// Alias for WithPreStart to be used with function inside.
-func (b *Behaviour) WithPreStartFunc(fn ActionFunc) *Behaviour {
-	return b.WithPreStart(fn)
 }
 
 // The function sets screens.
@@ -64,18 +54,17 @@ func (b *Behaviour) WithScreens(
 	return b
 }
 
-// The function sets commands.
+// The function sets as the standard root widget CommandWidget
+// and its commands..
 func (b *Behaviour) WithCommands(cmds ...*Command) *Behaviour {
-	for _, cmd := range cmds {
-		if cmd.Name == "" {
-			panic("empty command name")
-		}
-		_, ok := b.Commands[cmd.Name]
-		if ok {
-			panic("duplicate command definition")
-		}
-		b.Commands[cmd.Name] = cmd
-	}
+	b.Root = NewCommandWidget().
+		WithCommands(cmds...).
+		WithPreStartFunc(func(c *Context){
+			c.Sendf("Please, use the /start command to start")
+		}).WithUsageFunc(func(c *Context){
+			c.Sendf("No such command")
+		})
+
 	return b
 }
 

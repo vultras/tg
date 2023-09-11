@@ -110,9 +110,6 @@ var beh = tg.NewBehaviour().
 		// The session initialization.
 		c.Session.Data = &SessionData{}
 
-	}). // On any message update before the bot created session.
-	WithPreStartFunc(func(c *tg.Context){
-		c.Sendf("Please, use the /start command to start the bot")
 	}).WithScreens(
 		tg.NewScreen("start", tg.NewPage(
 				"The bot started!",
@@ -187,13 +184,17 @@ var beh = tg.NewBehaviour().
 			}),
 		tg.NewCommand("read").
 			Desc("reads a string and sends it back").
-			ActionFunc(func(c *tg.Context) {
-				/*c.Sendf("Type some text:")
-				msg, err := c.ReadTextMessage()
-				if err != nil {
-					return
+			WidgetFunc(func(c *tg.Context, updates chan *tg.Update) error {
+				c.Sendf("Type text and I will send it back to you")
+				for u := range updates {
+					if u.Message == nil {
+						continue
+					}
+					c.Sendf("You typed %q", u.Message.Text)
+					break
 				}
-				c.Sendf("You typed %q", msg)*/
+				c.Sendf("Done")
+				return nil
 			}),
 		tg.NewCommand("image").
 			Desc("sends a sample image").

@@ -117,7 +117,7 @@ func (b *Bot) WithGroupSessions(sessions GroupSessionMap) *Bot {
 }
 
 // Setting the command on the user side.
-func (bot *Bot) setCommands(
+func (bot *Bot) SetCommands(
 	scope tgbotapi.BotCommandScope,
 	cmdMap map[CommandName] BotCommander,
 ) {
@@ -156,20 +156,17 @@ func (bot *Bot) Run() error {
 		bot.groupBehaviour == nil {
 		return errors.New("no behaviour defined")
 	}
+
+	if bot.behaviour != nil && bot.behaviour.Root == nil {
+		return errors.New("the root widget is not set, cannot run")
+	}
+
 	uc := tgbotapi.NewUpdate(0)
 	uc.Timeout = 60
 	updates := bot.Api.GetUpdatesChan(uc)
 	handles := make(map[string]chan *Update)
 
 	if bot.behaviour != nil {
-		commanders := make(map[CommandName] BotCommander)
-		for k, v := range bot.behaviour.Commands {
-			commanders[k] = v
-		}
-		bot.setCommands(
-			tgbotapi.NewBotCommandScopeAllPrivateChats(),
-			commanders,
-		)
 		chn := make(chan *Update)
 		handles["private"] = chn
 		go bot.handlePrivate(chn)
@@ -180,7 +177,7 @@ func (bot *Bot) Run() error {
 		for k, v := range bot.groupBehaviour.Commands {
 			commanders[k] = v
 		}
-		bot.setCommands(
+		bot.SetCommands(
 			tgbotapi.NewBotCommandScopeAllGroupChats(),
 			commanders,
 		)

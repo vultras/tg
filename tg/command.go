@@ -89,3 +89,113 @@ func (c *GroupCommand) ToApi() tgbotapi.BotCommand {
 	ret.Description = c.Description
 	return ret
 }
+
+// The type is used to recognize commands and execute
+// its actions and widgets .
+type CommandWidget struct {
+	PreStart Action
+	Commands  CommandMap
+	Usage Action
+}
+
+// Returns new empty CommandWidget.
+func NewCommandWidget() *CommandWidget {
+	ret := &CommandWidget{}
+	ret.Commands = make(CommandMap)
+	return ret
+}
+
+// Set the commands to handle.
+func (w *CommandWidget) WithCommands(cmds ...*Command) *CommandWidget {
+	for _, cmd := range cmds {
+		if cmd.Name == "" {
+			panic("empty command name")
+		}
+		_, ok := w.Commands[cmd.Name]
+		if ok {
+			panic("duplicate command definition")
+		}
+		w.Commands[cmd.Name] = cmd
+	}
+	return w
+}
+
+// Set the prestart action.
+func (w *CommandWidget) WithPreStart(a Action) *CommandWidget {
+	w.PreStart = a
+	return w
+}
+
+// Set the prestart action with function.
+func (w *CommandWidget) WithPreStartFunc(fn ActionFunc) *CommandWidget {
+	return w.WithPreStart(fn)
+}
+
+// Set the usage action.
+func (w *CommandWidget) WithUsage(a Action) *CommandWidget {
+	w.Usage = a
+	return w
+}
+
+// Set the usage action with function.
+func (w *CommandWidget) WithUsageFunc(fn ActionFunc) *CommandWidget {
+	return w.WithUsage(fn)
+}
+
+func (widget *CommandWidget) Serve(c *Context, updates chan *Update) error {
+	commanders := make(map[CommandName] BotCommander)
+	for k, v := range widget.Commands {
+		commanders[k] = v
+	}
+	c.Bot.SetCommands(
+		tgbotapi.NewBotCommandScopeAllPrivateChats(),
+		commanders,
+	)
+
+	var cmdUpdates chan *Update
+	for u := range updates {
+		if c.ScreenId() == "" && u.Message != nil {
+			// Skipping and executing the preinit action
+			// while we have the empty screen.
+			// E. g. the session did not start.
+			if !(u.Message.IsCommand() && u.Message.Command() == "start") {
+				c.Run(widget.PreStart, u)
+				continue
+			}
+		}
+
+		if u.Message != nil && u.Message.IsCommand() {
+			// Command handling.
+			cmdName := CommandName(u.Message.Command())
+			cmd, ok := widget.Commands[cmdName]
+			if !ok {
+				c.Run(widget.Usage, u)
+				continue
+			} 
+			c.Run(cmd.Action, u)
+			if cmd.Widget != nil {
+				if cmdUpdates != nil {
+					close(cmdUpdates)
+				}
+				cmdUpdates = make(chan *Update)
+				go func() {
+					cmd.Widget.Serve(
+						&Context{context: c.context, Update: u},
+						cmdUpdates,
+					)
+					close(cmdUpdates)
+					cmdUpdates = nil
+				}()
+			}
+		}
+		
+		if cmdUpdates != nil {
+			// Send to the commands channel if we are
+			// executing one.
+			cmdUpdates <- u
+		} else {
+			c.Skip(u)
+		}
+	}
+	return nil
+}
