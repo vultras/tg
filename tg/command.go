@@ -16,6 +16,7 @@ type Command struct {
 	Name        CommandName
 	Description string
 	Action      *action
+	Widget Widget
 }
 type CommandMap map[CommandName]*Command
 
@@ -32,6 +33,15 @@ func (c *Command) WithAction(a Action) *Command {
 
 func (c *Command) ActionFunc(af ActionFunc) *Command {
 	return c.WithAction(af)
+}
+
+func (c *Command) WithWidget(w Widget) *Command {
+	c.Widget = w
+	return c
+}
+
+func (c *Command) WidgetFunc(fn WidgetFunc) *Command {
+	return c.WithWidget(fn)
 }
 
 func (c *Command) ToApi() tgbotapi.BotCommand {

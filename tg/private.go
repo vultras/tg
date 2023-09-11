@@ -26,6 +26,7 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 	if beh.Init != nil {
 		c.run(beh.Init, nil)
 	}
+	var cmdUpdates chan *Update
 	for u := range updates {
 		// The part is added to implement custom update handling.
 		if !session.started {
@@ -59,14 +60,32 @@ func (c *context) handleUpdateChan(updates chan *Update) {
 				if cmd.Action != nil {
 					c.run(cmd.Action, u)
 				}
+				if cmd.Widget != nil {
+					if cmdUpdates != nil {
+						close(cmdUpdates)
+					}
+					cmdUpdates = make(chan *Update)
+					go func() {
+						cmd.Widget.Serve(
+							&Context{context: c, Update: u},
+							cmdUpdates,
+						)
+						close(cmdUpdates)
+						cmdUpdates = nil
+					}()
+				}
 			} else {
 				// Some usage.
 			}
 			continue
-		} 
+		}
 		
 		// The standard thing - send messages to widgets.
-		c.widgetUpdates <- u
+		if cmdUpdates != nil {
+			cmdUpdates <- u
+		} else {
+			c.widgetUpdates <- u
+		}
 	}
 }
 
