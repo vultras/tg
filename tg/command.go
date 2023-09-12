@@ -171,7 +171,8 @@ func (widget *CommandWidget) Serve(c *Context, updates chan *Update) error {
 			if !ok {
 				c.Run(widget.Usage, u)
 				continue
-			} 
+			}
+
 			c.Run(cmd.Action, u)
 			if cmd.Widget != nil {
 				if cmdUpdates != nil {
@@ -187,6 +188,7 @@ func (widget *CommandWidget) Serve(c *Context, updates chan *Update) error {
 					cmdUpdates = nil
 				}()
 			}
+			continue
 		}
 		
 		if cmdUpdates != nil {

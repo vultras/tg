@@ -23,7 +23,7 @@ func newAction(a Action) *action {
 }
 
 func (a *action) Act(c *Context) {
-	if a.Action != nil {
+	if a != nil && a.Action != nil {
 		a.Action.Act(c)
 	}
 }
