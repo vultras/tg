@@ -86,8 +86,9 @@ type Context struct {
 	// The update that called the Context usage.
 	*Update
 	// Used as way to provide outer values redirection
-	// into widgets and actions 
-	Arg any
+	// into widgets and actions. It is like arguments
+	// for REST API request etc.
+	Args []any
 }
 
 // Customized actions for the bot.
@@ -117,17 +118,10 @@ func (sc ScreenChange) Act(c *Context) {
 type C = Context
 
 // Changes screen of user to the Id one.
-func (c *Context) ChangeScreen(screenId ScreenId) error {
+func (c *Context) ChangeScreen(screenId ScreenId, args ...any) error {
 	if !c.Bot.behaviour.ScreenExist(screenId) {
 		return ScreenNotExistErr
 	}
-
-	// Stop the reading by sending the nil,
-	// since we change the screen and
-	// current goroutine needs to be stopped.
-	// if c.readingUpdate {
-		// c.Updates <- nil
-	// }
 
 	// Getting the screen and changing to
 	// then executing its widget.
@@ -143,7 +137,11 @@ func (c *Context) ChangeScreen(screenId ScreenId) error {
 	if screen.Widget != nil {
 		// Running the widget if the screen has one.
 		go func() {
-			screen.Widget.Serve(c, c.skippedUpdates)
+			screen.Widget.Serve(&Context{
+				context: c.context,
+				Update: c.Update,
+				Args: args,
+			}, c.skippedUpdates)
 		}()
 	} else {
 		panic("no widget defined for the screen")

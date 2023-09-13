@@ -27,6 +27,9 @@ func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
 }
 
 func (w *MutateMessageWidget) Serve(c *tg.Context, updates chan *tg.Update) error {
+	for _, arg := range c.Args {
+		c.Sendf("%v", arg)
+	}
 	for u := range updates {
 		if u.Message == nil {
 			continue
@@ -65,7 +68,9 @@ var (
 			Row(
 			tg.NewButton("Inc/Dec").ScreenChange("start/inc-dec"),
 		).Row(
-		tg.NewButton("Upper case").ScreenChange("start/upper-case"),
+		tg.NewButton("Upper case").ActionFunc(func(c *tg.Context){
+			c.ChangeScreen("start/upper-case", "this shit", "works")
+		}),
 		tg.NewButton("Lower case").ScreenChange("start/lower-case"),
 	).Row(
 		tg.NewButton("Send location").ScreenChange("start/send-location"),
@@ -109,7 +114,6 @@ var beh = tg.NewBehaviour().
 	WithInitFunc(func(c *tg.Context) {
 		// The session initialization.
 		c.Session.Data = &SessionData{}
-
 	}).WithScreens(
 		tg.NewScreen("start", tg.NewPage(
 				"The bot started!",
@@ -175,6 +179,7 @@ var beh = tg.NewBehaviour().
 		tg.NewCommand("start").
 			Desc("start or restart the bot or move to the start screen").
 			ActionFunc(func(c *tg.Context){
+				c.Sendf("Your username is %q", c.Message.From.UserName)
 				c.ChangeScreen("start")
 			}),
 		tg.NewCommand("hello").
