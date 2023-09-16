@@ -112,7 +112,7 @@ func (p *Page) Serve(
 			replyUpdates.Send(u )
 		case p.SubWidget != nil :
 			if subFilterOk {
-				if subFilter.Filter(u, msgs) {
+				if !subFilter.Filter(u, msgs) {
 					subUpdates.Send(u)
 				}
 			} else {

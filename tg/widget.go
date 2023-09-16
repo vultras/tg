@@ -2,6 +2,7 @@ package tg
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	//"fmt"
 )
 
 // Implementing the interface provides
@@ -183,19 +184,17 @@ func (widget *InlineKeyboardWidget) Filter(
 	u *Update,
 	msgs MessageMap,
 ) bool {
-	if widget == nil {
-		return true
-	}
-	if u.CallbackQuery == nil || len(msgs) < 1 {
+	if widget == nil || u.CallbackQuery == nil {
 		return true
 	}
 
 	inlineMsg, inlineOk := msgs[""]
-	if inlineOk {
-		if u.CallbackQuery.Message.MessageID != 
-				inlineMsg.MessageID {
-			return true
-		}
+	if !inlineOk {
+		return true
+	}
+	if u.CallbackQuery.Message.MessageID != 
+			inlineMsg.MessageID {
+		return true
 	}
 
 	return false

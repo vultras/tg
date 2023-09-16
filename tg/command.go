@@ -166,7 +166,7 @@ func (widget *CommandWidget) Serve(
 		commanders,
 	)
 
-	var cmdUpdates chan *Update
+	var cmdUpdates *UpdateChan
 	for u := range updates.Chan() {
 		if c.ScreenId() == "" && u.Message != nil {
 			// Skipping and executing the preinit action
@@ -189,15 +189,14 @@ func (widget *CommandWidget) Serve(
 
 			c.Run(cmd.Action, u)
 			if cmd.Widget != nil {
-				if cmdUpdates != nil {
-					close(cmdUpdates)
-				}
-				cmdUpdates := NewUpdateChan()
+				cmdUpdates.Close()
+				cmdUpdates = NewUpdateChan()
 				go func() {
 					cmd.Widget.Serve(
 						&Context{context: c.context, Update: u},
 						cmdUpdates,
 					)
+					cmdUpdates.Close()
 					cmdUpdates = nil
 				}()
 			}
@@ -207,7 +206,7 @@ func (widget *CommandWidget) Serve(
 		if cmdUpdates != nil {
 			// Send to the commands channel if we are
 			// executing one.
-			cmdUpdates <- u
+			cmdUpdates.Send(u)
 		} else {
 			c.Skip(u)
 		}

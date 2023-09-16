@@ -119,19 +119,20 @@ func (c *Context) ChangeScreen(screenId ScreenId, args ...any) error {
 	c.prevScreenId = c.screenId
 	c.screenId = screenId
 
-	// Making the new channel for the widget.
+	// Stopping the current widget.
 	c.skippedUpdates.Close()
+	// Making channel for the new widget.
 	c.skippedUpdates = NewUpdateChan()
 	if screen.Widget != nil {
 		// Running the widget if the screen has one.
 		go func() {
+			updates := c.skippedUpdates
 			screen.Widget.Serve(&Context{
 				context: c.context,
 				Update: c.Update,
 				Args: args,
-			}, c.skippedUpdates)
-
-			c.skippedUpdates.Close()
+			}, updates)
+			updates.Close()
 		}()
 	} else {
 		panic("no widget defined for the screen")
