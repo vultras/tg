@@ -142,7 +142,21 @@ func (w *CommandWidget) WithUsageFunc(fn ActionFunc) *CommandWidget {
 	return w.WithUsage(fn)
 }
 
-func (widget *CommandWidget) Serve(c *Context, updates chan *Update) error {
+func (widget *Command) Filter(
+	u *Update,
+	msgs ...*Message,
+) bool {
+	/*if u.Message == nil || !u.Message.IsCommand() {
+		return false
+	}*/
+
+	return false
+}
+
+func (widget *CommandWidget) Serve(
+	c *Context,
+	updates *UpdateChan,
+) {
 	commanders := make(map[CommandName] BotCommander)
 	for k, v := range widget.Commands {
 		commanders[k] = v
@@ -153,7 +167,7 @@ func (widget *CommandWidget) Serve(c *Context, updates chan *Update) error {
 	)
 
 	var cmdUpdates chan *Update
-	for u := range updates {
+	for u := range updates.Chan() {
 		if c.ScreenId() == "" && u.Message != nil {
 			// Skipping and executing the preinit action
 			// while we have the empty screen.
@@ -178,13 +192,12 @@ func (widget *CommandWidget) Serve(c *Context, updates chan *Update) error {
 				if cmdUpdates != nil {
 					close(cmdUpdates)
 				}
-				cmdUpdates = make(chan *Update)
+				cmdUpdates := NewUpdateChan()
 				go func() {
 					cmd.Widget.Serve(
 						&Context{context: c.context, Update: u},
 						cmdUpdates,
 					)
-					close(cmdUpdates)
 					cmdUpdates = nil
 				}()
 			}
@@ -199,5 +212,4 @@ func (widget *CommandWidget) Serve(c *Context, updates chan *Update) error {
 			c.Skip(u)
 		}
 	}
-	return nil
 }

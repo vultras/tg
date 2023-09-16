@@ -4,48 +4,23 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+// Simple text message type.
 type MessageConfig struct {
-	To SessionId
-	ReplyTo MessageId
 	Text string
-	Inline *InlineKeyboard
-	Reply *ReplyKeyboard
 }
 
-func NewMessage(to SessionId, text string) *MessageConfig {
+// Return new message with the specified text.
+func NewMessage(text string) *MessageConfig {
 	ret := &MessageConfig{}
-	ret.To = to
 	ret.Text = text
 	return ret
 }
 
-func (config *MessageConfig) WithInline(
-	inline *InlineKeyboard,
-) *MessageConfig  {
-	config.Inline = inline
-	return config
-}
-
-func (config *MessageConfig) WithReply(
-	reply *ReplyKeyboard,
-) *MessageConfig {
-	config.Reply = reply
-	return config
-}
-
 func (config *MessageConfig) SendConfig(
 	sid SessionId, bot *Bot,
-) (*SendConfig, error) {
+) (*SendConfig) {
 	var ret SendConfig
-	msg := tgbotapi.NewMessage(config.To.ToApi(), config.Text)
-	if config.Inline != nil {
-		msg.ReplyMarkup = config.Inline.ToApi()
-	}
-	// Reply shades the inline.
-	if config.Reply != nil {
-		msg.ReplyMarkup = config.Reply.ToApi()
-	}
-
+	msg := tgbotapi.NewMessage(sid.ToApi(), config.Text)
 	ret.Message = &msg
-	return &ret, nil
+	return &ret
 }

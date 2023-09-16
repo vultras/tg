@@ -74,7 +74,7 @@ func (f *File) SendData() string {
 }
 func (f *File) SendConfig(
 	sid SessionId, bot *Bot,
-) (*SendConfig, error) {
+) (*SendConfig) {
 	var config SendConfig
 	cid := sid.ToApi()
 
@@ -85,9 +85,9 @@ func (f *File) SendConfig(
 
 		config.Image = &photo
 	default:
-		return nil, UnknownFileTypeErr
+		panic(UnknownFileTypeErr)
 	}
 
 
-	return &config, nil
+	return &config
 }

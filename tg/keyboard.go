@@ -10,6 +10,7 @@ type Keyboard struct {
 	// defined action for the button.
 	Action *action
 	Rows []ButtonRow
+	buttonMap ButtonMap
 }
 
 // The type represents reply keyboards.
@@ -59,6 +60,14 @@ func (kbd *InlineKeyboard) ActionFunc(fn ActionFunc) *InlineKeyboard {
 	return kbd.WithAction(fn)
 }
 
+// Transform the keyboard to widget with the specified text.
+func (kbd *InlineKeyboard) Widget(text string) *InlineKeyboardWidget {
+	ret := &InlineKeyboardWidget{}
+	ret.InlineKeyboard = kbd
+	ret.Text = text
+	return ret
+}
+
 // Adds a new button row to the current keyboard.
 func (kbd *ReplyKeyboard) Row(btns ...*Button) *ReplyKeyboard {
 	// For empty row. We do not need that.
@@ -78,6 +87,13 @@ func (kbd *ReplyKeyboard) WithAction(a Action) *ReplyKeyboard {
 // Alias to WithAction for simpler callback declarations.
 func (kbd *ReplyKeyboard) ActionFunc(fn ActionFunc) *ReplyKeyboard {
 	return kbd.WithAction(fn)
+}
+
+func (kbd *ReplyKeyboard) Widget(text string) *ReplyKeyboardWidget {
+	ret := &ReplyKeyboardWidget{}
+	ret.ReplyKeyboard = kbd
+	ret.Text = text
+	return ret
 }
 
 // Convert the Keyboard to the Telegram API type of reply keyboard.
@@ -133,12 +149,16 @@ func (kbd *ReplyKeyboard) WithOneTime(oneTime bool) *ReplyKeyboard {
 
 // Returns the map of buttons. Used to define the Action.
 func (kbd Keyboard) ButtonMap() ButtonMap {
+	if kbd.buttonMap != nil {
+		return kbd.buttonMap
+	}
 	ret := make(ButtonMap)
 	for _, vi := range kbd.Rows {
 		for _, vj := range vi {
 			ret[vj.Key()] = vj
 		}
 	}
+	kbd.buttonMap = ret
 
 	return ret
 }

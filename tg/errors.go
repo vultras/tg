@@ -16,6 +16,7 @@ var (
 	NotAvailableErr      = errors.New("the context is not available")
 	EmptyKeyboardTextErr = errors.New("got empty text for a keyboard")
 	ActionNotDefinedErr  = errors.New("action was not defined")
+	MapCollisionErr = errors.New("map collision occured")
 )
 
 func (wut WrongUpdateType) Error() string {

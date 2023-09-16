@@ -50,9 +50,9 @@ func (bot *Bot) Debug(debug bool) *Bot {
 func (bot *Bot) Send(
 	sid SessionId, v Sendable,
 ) (*Message, error) {
-	config, err := v.SendConfig(sid, bot)
-	if err != nil {
-		return nil, err
+	config  := v.SendConfig(sid, bot)
+	if config.Error != nil {
+		return nil, config.Error
 	}
 
 	msg, err := bot.Api.Send(config.ToApi())
@@ -64,18 +64,22 @@ func (bot *Bot) Send(
 
 func (bot *Bot) Render(
 	sid SessionId, r Renderable,
-) ([]*Message, error) {
-	configs, err := r.Render(sid, bot)
-	if err != nil {
-		return []*Message{}, err
+) (MessageMap, error) {
+	configs := r.Render(sid, bot)
+	if configs == nil {
+		return nil, MapCollisionErr
 	}
-	messages := []*Message{}
+	messages := make(MessageMap)
 	for _, config := range configs {
+		_, collision := messages[config.Name]
+		if collision {
+			return messages, MapCollisionErr
+		}
 		msg, err := bot.Api.Send(config.ToApi())
 		if err != nil {
 			return messages, err
 		}
-		messages = append(messages, &msg)
+		messages[config.Name] = &msg
 	}
 	return messages, nil
 }
@@ -204,7 +208,7 @@ func (bot *Bot) Run() error {
 // The function handles updates supposed for the private
 // chat with the bot.
 func (bot *Bot) handlePrivate(updates chan *Update) {
-	chans := make(map[SessionId]chan *Update)
+	chans := make(map[SessionId] *UpdateChan )
 	var sid SessionId
 	for u := range updates {
 		sid = SessionId(u.FromChat().ID)
@@ -224,9 +228,12 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 					Bot:     bot,
 					Session: session,
 				}
-				chn := make(chan *Update)
+				chn := NewUpdateChan()
 				chans[sid] = chn
-				go ctx.handleUpdateChan(chn)
+				go (&Context{
+					context: ctx,
+					Update: u,
+				}).Serve(chn)
 			}
 		} else if u.Message != nil {
 			// Create session on any message
@@ -237,16 +244,19 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 				Bot:     bot,
 				Session: lsession,
 			}
-			chn := make(chan *Update)
+			chn := NewUpdateChan()
 			chans[sid] = chn
-			go ctx.handleUpdateChan(chn)
+			go (&Context{
+				context: ctx,
+				Update: u,
+			}).Serve(chn)
 		}
 
 		chn, ok := chans[sid]
 		// The bot MUST get the "start" command.
 		// It will do nothing otherwise.
 		if ok {
-			chn <- u
+			chn.Send(u)
 		}
 	}
 }

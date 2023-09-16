@@ -10,7 +10,7 @@ type context struct {
 	Session *Session
 	// To reach the bot abilities inside callbacks.
 	Bot     *Bot
-	skippedUpdates chan *Update
+	skippedUpdates *UpdateChan
 	// Current screen ID.
 	screenId, prevScreenId ScreenId
 }
@@ -20,14 +20,12 @@ type context struct {
 // handling functions. Is provided to Act() function always.
 
 // Goroutie function to handle each user.
-func (c *context) handleUpdateChan(updates chan *Update) {
+func (c *Context) Serve(updates *UpdateChan) {
 	beh := c.Bot.behaviour
 	if beh.Init != nil {
-		c.run(beh.Init, nil)
+		c.Run(beh.Init, c.Update)
 	}
-	beh.Root.Serve(&Context{
-		context: c,
-	}, updates)
+	beh.Root.Serve(c, updates)
 }
 
 
@@ -53,14 +51,12 @@ func (c *Context) Run(a Action, u *Update) {
 // Skip the update sending it down to
 // the underlying widget.
 func (c *Context) Skip(u *Update) {
-	if c.skippedUpdates != nil {
-		c.skippedUpdates <- u
-	}
+	c.skippedUpdates.Send(u)
 }
 
 // Renders the Renedrable object to the side of client
 // and returns the messages it sent.
-func (c *Context) Render(v Renderable) ([]*Message, error) {
+func (c *Context) Render(v Renderable) (MessageMap, error) {
 	return c.Bot.Render(c.Session.Id, v)
 }
 
@@ -71,13 +67,7 @@ func (c *Context) Send(v Sendable) (*Message, error) {
 
 // Sends the formatted with fmt.Sprintf message to the user.
 func (c *Context) Sendf(format string, v ...any) (*Message, error) {
-	msg, err := c.Send(NewMessage(
-		c.Session.Id, fmt.Sprintf(format, v...),
-	))
-	if err != nil {
-		return nil, err
-	}
-	return msg, err
+	return c.Send(NewMessage(fmt.Sprintf(format, v...)))
 }
 
 // Interface to interact with the user.
@@ -130,10 +120,8 @@ func (c *Context) ChangeScreen(screenId ScreenId, args ...any) error {
 	c.screenId = screenId
 
 	// Making the new channel for the widget.
-	if c.skippedUpdates != nil {
-		close(c.skippedUpdates)
-	}
-	c.skippedUpdates = make(chan *Update)
+	c.skippedUpdates.Close()
+	c.skippedUpdates = NewUpdateChan()
 	if screen.Widget != nil {
 		// Running the widget if the screen has one.
 		go func() {
@@ -142,10 +130,16 @@ func (c *Context) ChangeScreen(screenId ScreenId, args ...any) error {
 				Update: c.Update,
 				Args: args,
 			}, c.skippedUpdates)
+
+			c.skippedUpdates.Close()
 		}()
 	} else {
 		panic("no widget defined for the screen")
 	}
 
 	return nil
+}
+
+func (c *Context) ChangeToPrevScreen() {
+	c.ChangeScreen(c.PrevScreenId())
 }

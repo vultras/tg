@@ -1,7 +1,7 @@
 package tg
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 // The basic widget to provide keyboard functionality
@@ -9,9 +9,9 @@ import (
 type Page struct {
 	Text string
 	SubWidget Widget
-	Inline *InlineKeyboard
-	Reply *ReplyKeyboard
+	Inline *InlineKeyboardWidget
 	Action Action
+	Reply *ReplyKeyboardWidget
 }
 
 // Return new page with the specified text.
@@ -22,13 +22,13 @@ func NewPage(text string) *Page {
 }
 
 // Set the inline keyboard.
-func (p *Page) WithInline(inline *InlineKeyboard) *Page {
+func (p *Page) WithInline(inline *InlineKeyboardWidget) *Page {
 	p.Inline = inline
 	return p
 }
 
 // Set the reply keyboard.
-func (p *Page) WithReply(reply *ReplyKeyboard) *Page {
+func (p *Page) WithReply(reply *ReplyKeyboardWidget) *Page {
 	p.Reply = reply
 	return p
 }
@@ -51,150 +51,76 @@ func (p *Page) WithSub(sub Widget) *Page {
 	return p
 }
 
-func (p *Page) Serve(
-	c *Context, updates chan *Update,
-) error {
-	msgs, err := c.Render(p)
-	if err != nil {
-		return err
-	}
 
-	// The inline message is always returned
-	// and the reply one is useless in our case.
-	inlineMsg := msgs[0]
-
-	if p.Action != nil {
-		c.run(p.Action, c.Update)
-	}
-	var subUpdates chan *Update
-	if p.SubWidget != nil {
-		subUpdates = make(chan *Update)
-		go p.SubWidget.Serve(c, subUpdates)
-		defer close(subUpdates)
-	}
-	for u := range updates {
-		var act Action
-		if u.Message != nil {
-			text := u.Message.Text
-			kbd := p.Reply
-			if kbd == nil {
-				if subUpdates != nil {
-					subUpdates <- u
-				}
-				continue
-			}
-			btns := kbd.ButtonMap()
-			btn, ok := btns[text]
-			if !ok {
-				if u.Message.Location != nil {
-					for _, b := range btns {
-						if b.SendLocation {
-							btn = b
-							ok = true
-						}
-					}
-				} else if subUpdates != nil {
-					subUpdates <- u
-				}
-			}
-			if btn != nil {
-				act = btn.Action
-			} else if kbd.Action != nil {
-				act = kbd.Action
-			}
-		} else if u.CallbackQuery != nil {
-			if u.CallbackQuery.Message.MessageID != inlineMsg.MessageID {
-				if subUpdates != nil {
-					subUpdates <- u
-				}
-				continue
-			}
-			cb := tgbotapi.NewCallback(
-				u.CallbackQuery.ID,
-				u.CallbackQuery.Data,
-			)
-			data := u.CallbackQuery.Data
-
-			_, err := c.Bot.Api.Request(cb)
-			if err != nil {
-				return err
-			}
-			kbd := p.Inline
-			if kbd == nil {
-				if subUpdates != nil {
-					subUpdates <- u
-				}
-				continue
-			}
-
-			btns := kbd.ButtonMap()
-			btn, ok := btns[data]
-			if !ok {
-				if subUpdates != nil {
-					subUpdates <- u
-				}
-				continue
-			}
-			if btn != nil {
-				act = btn.Action
-			} else if kbd.Action != nil {
-				act = kbd.Action
-			}
-		}
-		c.Run(act, u)
-	}
-	return nil
-}
-
-func (s *Page) Render(
+func (p *Page) Render(
 	sid SessionId, bot *Bot,
-) ([]*SendConfig, error) {
-	cid := sid.ToApi()
-	reply := s.Reply
-	inline := s.Inline
+) ([]*SendConfig) {
+	reply := p.Reply
+	inline := p.Inline
+
 	ret := []*SendConfig{}
-	var txt string
-	// Screen text and inline keyboard.
-	if s.Text != "" {
-		txt = s.Text
-	} else if inline != nil {
-		// Default to send the keyboard.
-		txt = ">"
+
+	if p.Text != "" {
+		cfg := NewMessage(p.Text).SendConfig(sid, bot).
+			WithName("page/text")
+		ret = append(ret, cfg)
 	}
-	if txt != "" {
-		msgConfig := tgbotapi.NewMessage(cid, txt)
-		if inline != nil {
-			msgConfig.ReplyMarkup = inline.ToApi()
-		} else if reply != nil {
-			msgConfig.ReplyMarkup = reply.ToApi()
-			ret = append(ret, &SendConfig{Message: &msgConfig})
-			return ret, nil
-		} else {
-			msgConfig.ReplyMarkup = NewReply().
-				WithRemove(true).
-				ToApi()
-			ret = append(ret, &SendConfig{Message: &msgConfig})
-			return ret, nil
-		}
-		ret = append(ret, &SendConfig{Message: &msgConfig})
+	if inline != nil {
+		cfg := inline.SendConfig(sid, bot).
+			WithName("page/inline")
+		ret = append(ret, cfg)
+	}
+	if p.Reply != nil {
+		cfg := reply.SendConfig(sid, bot).
+			WithName("page/reply")
+		ret = append(ret, cfg)
 	}
 
-	// Screen text and reply keyboard.
-	if reply != nil {
-		msgConfig := tgbotapi.NewMessage(cid, ">")
-		msgConfig.ReplyMarkup = reply.ToApi()
-		ret = append(ret, &SendConfig{
-			Message: &msgConfig,
-		})
-	} else {
-		// Removing keyboard if there is none.
-		msgConfig := tgbotapi.NewMessage(cid, ">")
-		msgConfig.ReplyMarkup = NewReply().
-			WithRemove(true).
-			ToApi()
-			ret = append(ret, &SendConfig{Message: &msgConfig})
-	}
-
-	return ret, nil
+	return ret
 }
+
+func (p *Page) Filter(
+	u *Update, msgs MessageMap,
+) bool {
+	return false
+}
+
+func (p *Page) Serve(
+	c *Context, updates *UpdateChan,
+) {
+	msgs, _ := c.Render(p)
+	inlineMsg := msgs["page/inline"]
+	if p.Action != nil {
+		c.Run(p.Action, c.Update)
+	}
+
+	subUpdates := c.RunWidgetBg(p.SubWidget)
+	defer subUpdates.Close()
+
+	inlineUpdates := c.RunWidgetBg(p.Inline)
+	defer inlineUpdates.Close()
+
+	replyUpdates := c.RunWidgetBg(p.Reply)
+	defer replyUpdates.Close()
+
+	subFilter, subFilterOk := p.SubWidget.(Filterer)
+	for u := range updates.Chan() {
+		switch {
+		case !p.Inline.Filter(u, MessageMap{"": inlineMsg}) :
+			inlineUpdates.Send(u)
+		case !p.Reply.Filter(u, msgs) :
+			replyUpdates.Send(u )
+		case p.SubWidget != nil :
+			if subFilterOk {
+				if subFilter.Filter(u, msgs) {
+					subUpdates.Send(u)
+				}
+			} else {
+				subUpdates.Send(u)
+			}
+		default:
+		}
+	}
+}
+
 

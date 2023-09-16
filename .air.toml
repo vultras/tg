@@ -4,29 +4,33 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./exe/test.exe"
-  cmd = "go build -o ./exe/ ./cmd/..."
+  bin = "exe/test.exe"
+  cmd = "go build -o ./exe/ ./cmd/test"
   delay = 0
-  exclude_dir = ["assets", "tmp", "vendor", "testdata"]
+
+  exclude_dir = ["app/volume", "assets", "tmp", "vendor", "testdata"]
   exclude_file = []
-  exclude_regex = ["_test.go"]
+  exclude_regex = ["_test.go", ".exe"]
+
   exclude_unchanged = false
   follow_symlink = false
   full_bin = ""
+
   include_dir = []
   include_ext = ["go", "tpl", "tmpl", "html"]
   include_file = []
+
   kill_delay = "0s"
   log = "build-errors.log"
-  poll = false
+  poll = true
   poll_interval = 0
   rerun = false
   rerun_delay = 500
-  send_interrupt = false
+  send_interrupt = true
   stop_on_error = true
 
 [color]
-  app = ""
+  app = "red"
   build = "yellow"
   main = "magenta"
   runner = "green"

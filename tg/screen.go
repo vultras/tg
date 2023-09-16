@@ -11,9 +11,6 @@ type Screen struct {
 	Id ScreenId
 	// The widget to run when reaching the screen.
 	Widget Widget
-
-	// Needs implementation later.
-	Dynamic DynamicWidget
 }
 
 // Map structure for the screens.
@@ -25,10 +22,5 @@ func NewScreen(id ScreenId, widget Widget) *Screen {
 		Id: id,
 		Widget: widget,
 	}
-}
-
-func (s *Screen) WithDynamic(dynamic DynamicWidget) *Screen {
-	s.Dynamic = dynamic
-	return s
 }
 

@@ -83,13 +83,9 @@ func (c *groupContext) Sendf(
 	format string,
 	v ...any,
 ) (*Message, error) {
-	msg, err := c.Send(NewMessage(
-		c.Session.Id, fmt.Sprintf(format, v...),
+	return c.Send(NewMessage(
+		fmt.Sprintf(format, v...),
 	))
-	if err != nil {
-		return nil, err
-	}
-	return msg, err
 }
 
 // Sends into the chat specified values converted to strings.

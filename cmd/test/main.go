@@ -26,18 +26,21 @@ func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
 	return ret
 }
 
-func (w *MutateMessageWidget) Serve(c *tg.Context, updates chan *tg.Update) error {
+func (w *MutateMessageWidget) Serve(c *tg.Context, updates *tg.UpdateChan) {
 	for _, arg := range c.Args {
 		c.Sendf("%v", arg)
 	}
-	for u := range updates {
-		if u.Message == nil {
-			continue
-		}
+	for u := range updates.Chan() {
 		text := u.Message.Text
 		c.Sendf("%s", w.Mutate(text))
 	}
-	return nil
+}
+
+func (w *MutateMessageWidget) Filter(u *tg.Update, _ tg.MessageMap) bool {
+	if u.Message == nil {
+		return true
+	}
+	return false
 }
 
 func ExtractSessionData(c *tg.Context) *SessionData {
@@ -116,14 +119,14 @@ var beh = tg.NewBehaviour().
 		c.Session.Data = &SessionData{}
 	}).WithScreens(
 		tg.NewScreen("start", tg.NewPage(
-				"The bot started!",
+				"",
 			).WithInline(
 				tg.NewInline().Row(
 					tg.NewButton("GoT Github page").
 						WithUrl("https://github.com/mojosa-software/got"),
-				),
+				).Widget(""),
 			).WithReply(
-				navKeyboard,
+				navKeyboard.Widget("The bot started!"),
 			),
 		),
 		tg.NewScreen("start/inc-dec", tg.NewPage(
@@ -132,7 +135,7 @@ var beh = tg.NewBehaviour().
 					"by saving the counter for each of users "+
 					"separately. ",
 			).WithReply(
-				incDecKeyboard,
+				incDecKeyboard.Widget("Press the buttons to increment and decrement"),
 			).ActionFunc(func(c *tg.Context) {
 				// The function will be calleb before serving page.
 				d := ExtractSessionData(c)
@@ -143,7 +146,7 @@ var beh = tg.NewBehaviour().
 		tg.NewScreen("start/upper-case", tg.NewPage(
 				"Type text and the bot will send you the upper case version to you",
 			).WithReply(
-				navToStartKeyboard,
+				navToStartKeyboard.Widget(""),
 			).WithSub(
 				NewMutateMessageWidget(strings.ToUpper),
 			),
@@ -152,7 +155,7 @@ var beh = tg.NewBehaviour().
 		tg.NewScreen("start/lower-case", tg.NewPage(
 				"Type text and the bot will send you the lower case version",
 			).WithReply(
-				navToStartKeyboard,
+				navToStartKeyboard.Widget(""),
 			).WithSub(
 				NewMutateMessageWidget(strings.ToLower),
 			),
@@ -161,7 +164,7 @@ var beh = tg.NewBehaviour().
 		tg.NewScreen("start/send-location", tg.NewPage(
 				"Send your location and I will tell where you are!",
 			).WithReply(
-				sendLocationKeyboard,
+				sendLocationKeyboard.Widget(""),
 			).WithInline(
 				tg.NewInline().Row(
 					tg.NewButton(
@@ -172,7 +175,7 @@ var beh = tg.NewBehaviour().
 							d := ExtractSessionData(c)
 							c.Sendf("Counter = %d", d.Counter)
 					}),
-				),
+				).Widget("Press the button to display your counter"),
 			),
 		),
 	).WithCommands(
@@ -189,9 +192,9 @@ var beh = tg.NewBehaviour().
 			}),
 		tg.NewCommand("read").
 			Desc("reads a string and sends it back").
-			WidgetFunc(func(c *tg.Context, updates chan *tg.Update) error {
+			WidgetFunc(func(c *tg.Context, updates *tg.UpdateChan) {
 				c.Sendf("Type text and I will send it back to you")
-				for u := range updates {
+				for u := range updates.Chan() {
 					if u.Message == nil {
 						continue
 					}
@@ -199,7 +202,6 @@ var beh = tg.NewBehaviour().
 					break
 				}
 				c.Sendf("Done")
-				return nil
 			}),
 		tg.NewCommand("image").
 			Desc("sends a sample image").
