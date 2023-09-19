@@ -243,12 +243,22 @@ func (widget *ReplyKeyboardWidget) Filter(
 	if widget == nil {
 		return true
 	}
+
 	if u.Message == nil {
 		return true
 	}
+
+
 	_, ok := widget.ButtonMap()[u.Message.Text]
 	if !ok {
-		return true
+		if u.Message.Location != nil {
+			locBtn := widget.ButtonMap().LocationButton()
+			if locBtn == nil {
+				return true
+			}
+		} else {
+			return true
+		}
 	}
 	return false
 }
@@ -261,15 +271,11 @@ func (widget *ReplyKeyboardWidget) Serve(
 		var btn *Button
 		text := u.Message.Text
 		btns := widget.ButtonMap()
+
 		btn, ok := btns[text]
 		if !ok {
 			if u.Message.Location != nil {
-				for _, b := range btns {
-					if b.SendLocation {
-						btn = b
-						ok = true
-					}
-				}
+				btn = btns.LocationButton()
 			}
 		}
 

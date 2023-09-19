@@ -15,6 +15,16 @@ type Button struct {
 
 type ButtonMap map[string]*Button
 
+// Returns the only location button in the map.
+func (btnMap ButtonMap) LocationButton() *Button {
+	for _, btn := range btnMap {
+		if btn.SendLocation {
+			return btn
+		}
+	}
+	return nil
+}
+
 // Represents the reply button row.
 type ButtonRow []*Button
 

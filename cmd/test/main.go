@@ -151,9 +151,9 @@ var beh = tg.NewBehaviour().
 		),
 
 		tg.NewScreen("start/send-location", tg.NewPage(
-				"Send your location and I will tell where you are!",
+				"",
 			).WithReply(
-				sendLocationKeyboard.Widget(""),
+				sendLocationKeyboard.Widget("Press the button to send your location!"),
 			).WithInline(
 				tg.NewKeyboard().Row(
 					tg.NewButton(

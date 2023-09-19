@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "exe/test.exe"
+  bin = "exe/test"
   cmd = "go build -o ./exe/ ./cmd/test"
   delay = 0
 
@@ -26,8 +26,8 @@ tmp_dir = "tmp"
   poll_interval = 0
   rerun = false
   rerun_delay = 500
-  send_interrupt = true
-  stop_on_error = true
+  send_interrupt = false
+  stop_on_error = false
 
 [color]
   app = "red"
