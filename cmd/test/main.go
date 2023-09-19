@@ -51,7 +51,7 @@ var (
 	startScreenButton = tg.NewButton("🏠 To the start screen").
 				ScreenChange("start")
 
-	incDecKeyboard = tg.NewReply().Row(
+	incDecKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
 			d := ExtractSessionData(c)
 			d.Counter++
@@ -66,51 +66,40 @@ var (
 		startScreenButton,
 	)
 
-	navKeyboard = tg.NewReply().
-			WithOneTime(true).
-			Row(
-			tg.NewButton("Inc/Dec").ScreenChange("start/inc-dec"),
-		).Row(
+	navKeyboard = tg.NewKeyboard().Row(
+		tg.NewButton("Inc/Dec").ScreenChange("start/inc-dec"),
+	).Row(
 		tg.NewButton("Upper case").ActionFunc(func(c *tg.Context){
 			c.ChangeScreen("start/upper-case", "this shit", "works")
 		}),
 		tg.NewButton("Lower case").ScreenChange("start/lower-case"),
 	).Row(
 		tg.NewButton("Send location").ScreenChange("start/send-location"),
-	)
+	).Reply().WithOneTime(true)
 
-	sendLocationKeyboard = tg.NewReply().
-				Row(
-			tg.NewButton("Send location").
-				WithSendLocation(true).
-				ActionFunc(func(c *tg.Context) {
-					var err error
-					if c.Message.Location != nil {
-						l := c.Message.Location
-						_, err = c.Sendf(
-							"Longitude: %f\n"+
-								"Latitude: %f\n"+
-								"Heading: %d"+
-								"",
-							l.Longitude,
-							l.Latitude,
-							l.Heading,
-						)
-					} else {
-						_, err = c.Sendf("Somehow location was not sent")
-					}
-					if err != nil {
-						c.Sendf("%q", err)
-					}
-				}),
-		).Row(
+	sendLocationKeyboard = tg.NewKeyboard().Row(
+		tg.NewButton("Send location").
+			WithSendLocation(true).
+			ActionFunc(func(c *tg.Context) {
+				l := c.Message.Location
+				c.Sendf(
+					"Longitude: %f\n"+
+					"Latitude: %f\n"+
+					"Heading: %d"+
+					"",
+					l.Longitude,
+					l.Latitude,
+					l.Heading,
+				)
+			}),
+	).Row(
 		startScreenButton,
-	)
+	).Reply()
 
 	// The keyboard to return to the start screen.
-	navToStartKeyboard = tg.NewReply().Row(
+	navToStartKeyboard = tg.NewKeyboard().Row(
 		startScreenButton,
-	)
+	).Reply()
 )
 
 var beh = tg.NewBehaviour().
@@ -121,12 +110,12 @@ var beh = tg.NewBehaviour().
 		tg.NewScreen("start", tg.NewPage(
 				"",
 			).WithInline(
-				tg.NewInline().Row(
+				tg.NewKeyboard().Row(
 					tg.NewButton("GoT Github page").
 						WithUrl("https://github.com/mojosa-software/got"),
-				).Widget(""),
+				).Inline().Widget("The bot started!"),
 			).WithReply(
-				navKeyboard.Widget("The bot started!"),
+				navKeyboard.Widget("Choose what you are interested in"),
 			),
 		),
 		tg.NewScreen("start/inc-dec", tg.NewPage(
@@ -135,7 +124,7 @@ var beh = tg.NewBehaviour().
 					"by saving the counter for each of users "+
 					"separately. ",
 			).WithReply(
-				incDecKeyboard.Widget("Press the buttons to increment and decrement"),
+				incDecKeyboard.Reply().Widget("Press the buttons to increment and decrement"),
 			).ActionFunc(func(c *tg.Context) {
 				// The function will be calleb before serving page.
 				d := ExtractSessionData(c)
@@ -166,7 +155,7 @@ var beh = tg.NewBehaviour().
 			).WithReply(
 				sendLocationKeyboard.Widget(""),
 			).WithInline(
-				tg.NewInline().Row(
+				tg.NewKeyboard().Row(
 					tg.NewButton(
 						"Check",
 					).WithData(
@@ -175,7 +164,7 @@ var beh = tg.NewBehaviour().
 							d := ExtractSessionData(c)
 							c.Sendf("Counter = %d", d.Counter)
 					}),
-				).Widget("Press the button to display your counter"),
+				).Inline().Widget("Press the button to display your counter"),
 			),
 		),
 	).WithCommands(

@@ -8,39 +8,29 @@ import (
 type Keyboard struct {
 	// The action is called if there is no
 	// defined action for the button.
-	Action *action
+	Action Action
 	Rows []ButtonRow
 	buttonMap ButtonMap
 }
 
 // The type represents reply keyboards.
 type ReplyKeyboard struct {
-	Keyboard
+	*Keyboard
 	// If true will be removed after one press.
 	OneTime bool
 	// If true will remove the keyboard on send.
 	Remove bool
 }
 
-// The type represents keyboard to be emdedded into the messages.
-type InlineKeyboard struct {
-	Keyboard
-}
-
-// Returns new empty inline keyboard.
-func NewInline() *InlineKeyboard {
-	ret := &InlineKeyboard{}
-	return ret
-}
-
-// Returns new empty reply keyboard.
-func NewReply() *ReplyKeyboard {
-	ret := &ReplyKeyboard {}
+// Returns the new keyboard with specified rows.
+func NewKeyboard(rows ...ButtonRow) *Keyboard {
+	ret := &Keyboard{}
+	ret.Rows = rows
 	return ret
 }
 
 // Adds a new button row to the current keyboard.
-func (kbd *InlineKeyboard) Row(btns ...*Button) *InlineKeyboard {
+func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
 	// For empty row. We do not need that.
 	if len(btns) < 1 {
 		return kbd
@@ -49,15 +39,51 @@ func (kbd *InlineKeyboard) Row(btns ...*Button) *InlineKeyboard {
 	return kbd
 }
 
-// Set default action for the buttons in keyboard.
-func (kbd *InlineKeyboard) WithAction(a Action) *InlineKeyboard {
-	kbd.Action = newAction(a)
+// Set the default action when no button provides
+// key to the data we got.
+func (kbd *Keyboard) WithAction(a Action) *Keyboard {
+	kbd.Action = a
 	return kbd
 }
 
-// Alias to WithAction to simpler define actions.
-func (kbd *InlineKeyboard) ActionFunc(fn ActionFunc) *InlineKeyboard {
+// Alias to WithAction but better typing when setting
+// a specific function
+func (kbd *Keyboard) ActionFunc(fn ActionFunc) *Keyboard {
 	return kbd.WithAction(fn)
+}
+
+// Returns the map of buttons. Used to define the Action.
+func (kbd Keyboard) ButtonMap() ButtonMap {
+	if kbd.buttonMap != nil {
+		return kbd.buttonMap
+	}
+	ret := make(ButtonMap)
+	for _, vi := range kbd.Rows {
+		for _, vj := range vi {
+			ret[vj.Key()] = vj
+		}
+	}
+	kbd.buttonMap = ret
+
+	return ret
+}
+
+// Convert the keyboard to the more specific inline one.
+func (kbd *Keyboard) Inline() *InlineKeyboard {
+	ret := &InlineKeyboard{}
+	ret.Keyboard = kbd
+	return ret
+}
+
+func (kbd *Keyboard) Reply() *ReplyKeyboard {
+	ret := &ReplyKeyboard{}
+	ret.Keyboard = kbd
+	return ret
+}
+
+// The type represents keyboard to be emdedded into the messages.
+type InlineKeyboard struct {
+	*Keyboard
 }
 
 // Transform the keyboard to widget with the specified text.
@@ -68,27 +94,7 @@ func (kbd *InlineKeyboard) Widget(text string) *InlineKeyboardWidget {
 	return ret
 }
 
-// Adds a new button row to the current keyboard.
-func (kbd *ReplyKeyboard) Row(btns ...*Button) *ReplyKeyboard {
-	// For empty row. We do not need that.
-	if len(btns) < 1 {
-		return kbd
-	}
-	kbd.Rows = append(kbd.Rows, btns)
-	return kbd
-}
-
-// Set default action for the keyboard.
-func (kbd *ReplyKeyboard) WithAction(a Action) *ReplyKeyboard {
-	kbd.Action = newAction(a)
-	return kbd
-}
-
-// Alias to WithAction for simpler callback declarations.
-func (kbd *ReplyKeyboard) ActionFunc(fn ActionFunc) *ReplyKeyboard {
-	return kbd.WithAction(fn)
-}
-
+// Transform the keyboard to widget with the specified text.
 func (kbd *ReplyKeyboard) Widget(text string) *ReplyKeyboardWidget {
 	ret := &ReplyKeyboardWidget{}
 	ret.ReplyKeyboard = kbd
@@ -147,19 +153,4 @@ func (kbd *ReplyKeyboard) WithOneTime(oneTime bool) *ReplyKeyboard {
 	return kbd
 }
 
-// Returns the map of buttons. Used to define the Action.
-func (kbd Keyboard) ButtonMap() ButtonMap {
-	if kbd.buttonMap != nil {
-		return kbd.buttonMap
-	}
-	ret := make(ButtonMap)
-	for _, vi := range kbd.Rows {
-		for _, vj := range vi {
-			ret[vj.Key()] = vj
-		}
-	}
-	kbd.buttonMap = ret
-
-	return ret
-}
 
