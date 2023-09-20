@@ -92,7 +92,7 @@ func (p *Page) Serve(c *Context) {
 	msgs, _ := c.Render(p)
 	inlineMsg := msgs["page/inline"]
 
-	subUpdates := c.RunWidget(p.SubWidget)
+	subUpdates := c.RunWidget(p.SubWidget, c.Arg)
 	defer subUpdates.Close()
 
 	inlineUpdates := c.RunWidget(p.Inline)

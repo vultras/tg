@@ -5,6 +5,10 @@ import (
 	//"fmt"
 )
 
+type ArgMap = map[string] any
+type ArgSlice = []any
+type ArgList[V any] []V
+
 // Implementing the interface provides
 // ability to build your own widgets,
 // aka components.

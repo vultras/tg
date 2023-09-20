@@ -165,7 +165,7 @@ func (widget *CommandWidget) Serve(c *Context) {
 
 	var cmdUpdates *UpdateChan
 	for u := range c.Input() {
-		if c.ScreenId() == "" && u.Message != nil {
+		if c.CurScreen() == "" && u.Message != nil {
 			// Skipping and executing the preinit action
 			// while we have the empty screen.
 			// E. g. the session did not start.

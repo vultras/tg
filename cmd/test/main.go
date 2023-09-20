@@ -27,7 +27,7 @@ func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
 }
 
 func (w *MutateMessageWidget) Serve(c *tg.Context) {
-	args, ok := c.Arg.([]any)
+	args, ok := c.Arg.(tg.ArgSlice)
 	if ok {
 		for _, arg := range args {
 			c.Sendf("%v", arg)
@@ -51,8 +51,9 @@ func ExtractSessionData(c *tg.Context) *SessionData {
 }
 
 var (
-	startScreenButton = tg.NewButton("🏠 To the start screen").
-				ScreenChange("/start")
+	startScreenButton = tg.NewButton("Back").ActionFunc(func(c *tg.Context){
+		c.GoUp()
+	})
 
 	incDecKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
@@ -73,7 +74,7 @@ var (
 		tg.NewButton("Inc/Dec").ScreenChange("/start/inc-dec"),
 	).Row(
 		tg.NewButton("Upper case").ActionFunc(func(c *tg.Context){
-			c.ChangeScreen("/start/upper-case", "this shit", "works")
+			c.Go("/start/upper-case", "this shit", "works")
 		}),
 		tg.NewButton("Lower case").ScreenChange("/start/lower-case"),
 	).Row(
@@ -175,7 +176,7 @@ var beh = tg.NewBehaviour().
 			Desc("start or restart the bot or move to the start screen").
 			ActionFunc(func(c *tg.Context){
 				c.Sendf("Your username is %q", c.Message.From.UserName)
-				c.ChangeScreen("/start")
+				c.Go("/start")
 			}),
 		tg.NewCommand("hello").
 			Desc("sends the 'Hello, World!' message back").

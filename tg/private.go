@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"path"
 )
 
 type ContextType string
@@ -41,11 +42,11 @@ func (c *context) run(a Action, u *Update) {
 	a.Act(&Context{context: c, Update:  u})
 }
 
-func (c *Context) ScreenId() ScreenId {
+func (c *Context) CurScreen() ScreenId {
 	return c.screenId
 }
 
-func (c *Context) PrevScreenId() ScreenId {
+func (c *Context) PrevScreen() ScreenId {
 	return c.prevScreenId
 }
 
@@ -149,7 +150,7 @@ func (sc ScreenChange) Act(c *Context) {
 	if !c.Bot.behaviour.ScreenExist(ScreenId(sc)) {
 		panic(ScreenNotExistErr)
 	}
-	err := c.ChangeScreen(ScreenId(sc))
+	err := c.Go(ScreenId(sc))
 	if err != nil {
 		panic(err)
 	}
@@ -158,7 +159,7 @@ func (sc ScreenChange) Act(c *Context) {
 type C = Context
 
 // Changes screen of user to the Id one.
-func (c *Context) ChangeScreen(screenId ScreenId, args ...any) error {
+func (c *Context) Go(screenId ScreenId, args ...any) error {
 	if !c.Bot.behaviour.ScreenExist(screenId) {
 		return ScreenNotExistErr
 	}
@@ -171,9 +172,8 @@ func (c *Context) ChangeScreen(screenId ScreenId, args ...any) error {
 
 	// Stopping the current widget.
 	c.skippedUpdates.Close()
-	c.skippedUpdates = nil
 	if screen.Widget != nil {
-		c.skippedUpdates = c.RunWidget(screen.Widget, args)
+		c.skippedUpdates = c.RunWidget(screen.Widget, args...)
 	} else {
 		panic("no widget defined for the screen")
 	}
@@ -186,7 +186,6 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 	if widget == nil {
 		return nil
 	}
-
 
 	var arg any
 	if len(args) == 1 {
@@ -202,12 +201,20 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 				WithInput(updates).
 				WithArg(arg),
 		)
+		// To let widgets finish themselves before
+		// the channel is closed.
 		updates.Close()
 	}()
 
 	return updates
 }
 
-func (c *Context) ChangeToPrevScreen() {
-	c.ChangeScreen(c.PrevScreenId())
+func (c *Context) GoUp() {
+	c.Go(ScreenId(path.Dir(string(c.CurScreen()))))
+}
+
+// Change screen to the previous.
+// To get to the parent screen use GoUp.
+func (c *Context) GoPrev() {
+	c.Go(c.PrevScreen())
 }
