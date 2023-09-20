@@ -106,6 +106,21 @@ var (
 	).Reply()
 )
 
+var theNode = tg.NewNode(
+	"/", tg.WidgetFunc(func(c *tg.Context){
+		c.Go("/start")
+	}),
+	tg.NewNode(
+		"start", tg.WidgetFunc(func(c *tg.Context){}),
+		tg.NewNode(
+			"profile", tg.WidgetFunc(func(c *tg.Context){}),
+		),
+		tg.NewNode(
+			"upper-case", tg.WidgetFunc(func(c *tg.Context){}),
+		),
+	),
+)
+
 var beh = tg.NewBehaviour().
 	WithInitFunc(func(c *tg.Context) {
 		// The session initialization.
@@ -224,6 +239,8 @@ var gBeh = tg.NewGroupBehaviour().
 	)
 
 func main() {
+	log.Println(theNode.ScreenMap())
+	return
 	token := os.Getenv("BOT_TOKEN")
 
 	bot, err := tg.NewBot(token)

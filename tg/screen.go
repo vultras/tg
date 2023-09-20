@@ -13,6 +13,54 @@ type Screen struct {
 	Widget Widget
 }
 
+// The node is a simple way to represent
+// tree-like structured applications.
+type Node struct {
+	Screen *Screen
+	Subs []*Node
+}
+
+func NewNode(id ScreenId, widget Widget, subs ...*Node) *Node {
+	ret := &Node{}
+	ret.Screen = NewScreen(id, widget)
+	ret.Subs = subs
+	return ret
+}
+
+func (n *Node) ScreenMap() ScreenMap {
+	m := make(ScreenMap)
+	id := n.Screen.Id
+	m[id] = n.Screen
+	n.Screen.Id = id
+	var root ScreenId
+	if id == "/" {
+		root = ""
+	} else {
+		root = id
+	}
+	for _, sub := range n.Subs {
+		buf := sub.screenMap(root + "/")
+		for k, v := range buf {
+			m[k] = v
+		}
+	}
+	return m
+}
+
+func (n *Node) screenMap(root ScreenId) ScreenMap {
+	m := make(ScreenMap)
+	id := root+ n.Screen.Id
+	m[id] = n.Screen
+	n.Screen.Id = id
+	for _, sub := range n.Subs {
+		buf := sub.screenMap(id + "/")
+		for k, v := range buf {
+			m[k] = v
+		}
+	}
+	return m
+}
+
 // Map structure for the screens.
 type ScreenMap map[ScreenId]*Screen
 
