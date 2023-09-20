@@ -6,6 +6,18 @@ import (
 	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+type ContextType string
+
+const (
+	NoContextType = iota
+	PrivateContextType
+	GroupContextType
+	ChannelContextType
+)
+
+// General context for a specific user.
+// Is always the same and is not reached
+// inside end function-handlers.
 type context struct {
 	Session *Session
 	// To reach the bot abilities inside callbacks.
@@ -15,17 +27,13 @@ type context struct {
 	screenId, prevScreenId ScreenId
 }
 
-
-// The type represents way to interact with user in
-// handling functions. Is provided to Act() function always.
-
 // Goroutie function to handle each user.
-func (c *Context) Serve(updates *UpdateChan) {
+func (c *Context) serve() {
 	beh := c.Bot.behaviour
 	if beh.Init != nil {
 		c.Run(beh.Init, c.Update)
 	}
-	beh.Root.Serve(c, updates)
+	beh.Root.Serve(c)
 }
 
 
@@ -70,6 +78,14 @@ func (c *Context) Sendf(format string, v ...any) (*Message, error) {
 	return c.Send(NewMessage(fmt.Sprintf(format, v...)))
 }
 
+func (c *Context) Sendf2(format string, v ...any) (*Message, error) {
+	return c.Send(NewMessage(fmt.Sprintf(format, v...)).MD2())
+}
+
+func (c *Context) SendfHTML(format string, v ...any) (*Message, error) {
+	return c.Send(NewMessage(fmt.Sprintf(format, v...)).HTML())
+}
+
 // Interface to interact with the user.
 type Context struct {
 	*context
@@ -78,8 +94,42 @@ type Context struct {
 	// Used as way to provide outer values redirection
 	// into widgets and actions. It is like arguments
 	// for REST API request etc.
-	Args []any
+	Arg any
+	// Instead of updates as argument.
+	input *UpdateChan
 }
+
+// Get the input for current widget.
+// Should be used inside handlers (aka "Serve").
+func (c *Context) Input() chan *Update {
+	return c.input.Chan()
+}
+
+// Returns copy of current context so
+// it will not affect the current one.
+// But be careful because
+// most of the insides uses pointers
+// which are not deeply copied.
+func (c *Context) Copy() *Context {
+	ret := *c
+	return &ret
+}
+
+func (c *Context) WithArg(v any) *Context {
+	c.Arg = v
+	return c
+}
+
+func (c *Context) WithUpdate(u *Update) *Context {
+	c.Update = u
+	return c
+}
+
+func (c *Context) WithInput(input *UpdateChan) *Context {
+	c.input = input
+	return c
+}
+
 
 // Customized actions for the bot.
 type Action interface {
@@ -121,24 +171,41 @@ func (c *Context) ChangeScreen(screenId ScreenId, args ...any) error {
 
 	// Stopping the current widget.
 	c.skippedUpdates.Close()
-	// Making channel for the new widget.
-	c.skippedUpdates = NewUpdateChan()
+	c.skippedUpdates = nil
 	if screen.Widget != nil {
-		// Running the widget if the screen has one.
-		go func() {
-			updates := c.skippedUpdates
-			screen.Widget.Serve(&Context{
-				context: c.context,
-				Update: c.Update,
-				Args: args,
-			}, updates)
-			updates.Close()
-		}()
+		c.skippedUpdates = c.RunWidget(screen.Widget, args)
 	} else {
 		panic("no widget defined for the screen")
 	}
 
 	return nil
+}
+
+// Run widget in background returning the new input channel for it.
+func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
+	if widget == nil {
+		return nil
+	}
+
+
+	var arg any
+	if len(args) == 1 {
+		arg = args[0]
+	} else if len(args) > 1 {
+		arg = args
+	}
+
+	updates := NewUpdateChan()
+	go func() {
+		widget.Serve(
+			c.Copy().
+				WithInput(updates).
+				WithArg(arg),
+		)
+		updates.Close()
+	}()
+
+	return updates
 }
 
 func (c *Context) ChangeToPrevScreen() {

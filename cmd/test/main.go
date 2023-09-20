@@ -26,11 +26,14 @@ func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
 	return ret
 }
 
-func (w *MutateMessageWidget) Serve(c *tg.Context, updates *tg.UpdateChan) {
-	for _, arg := range c.Args {
-		c.Sendf("%v", arg)
+func (w *MutateMessageWidget) Serve(c *tg.Context) {
+	args, ok := c.Arg.([]any)
+	if ok {
+		for _, arg := range args {
+			c.Sendf("%v", arg)
+		}
 	}
-	for u := range updates.Chan() {
+	for u := range c.Input() {
 		text := u.Message.Text
 		c.Sendf("%s", w.Mutate(text))
 	}
@@ -49,7 +52,7 @@ func ExtractSessionData(c *tg.Context) *SessionData {
 
 var (
 	startScreenButton = tg.NewButton("🏠 To the start screen").
-				ScreenChange("start")
+				ScreenChange("/start")
 
 	incDecKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
@@ -67,14 +70,14 @@ var (
 	)
 
 	navKeyboard = tg.NewKeyboard().Row(
-		tg.NewButton("Inc/Dec").ScreenChange("start/inc-dec"),
+		tg.NewButton("Inc/Dec").ScreenChange("/start/inc-dec"),
 	).Row(
 		tg.NewButton("Upper case").ActionFunc(func(c *tg.Context){
-			c.ChangeScreen("start/upper-case", "this shit", "works")
+			c.ChangeScreen("/start/upper-case", "this shit", "works")
 		}),
-		tg.NewButton("Lower case").ScreenChange("start/lower-case"),
+		tg.NewButton("Lower case").ScreenChange("/start/lower-case"),
 	).Row(
-		tg.NewButton("Send location").ScreenChange("start/send-location"),
+		tg.NewButton("Send location").ScreenChange("/start/send-location"),
 	).Reply().WithOneTime(true)
 
 	sendLocationKeyboard = tg.NewKeyboard().Row(
@@ -107,7 +110,7 @@ var beh = tg.NewBehaviour().
 		// The session initialization.
 		c.Session.Data = &SessionData{}
 	}).WithScreens(
-		tg.NewScreen("start", tg.NewPage(
+		tg.NewScreen("/start", tg.NewPage(
 				"",
 			).WithInline(
 				tg.NewKeyboard().Row(
@@ -118,7 +121,7 @@ var beh = tg.NewBehaviour().
 				navKeyboard.Widget("Choose what you are interested in"),
 			),
 		),
-		tg.NewScreen("start/inc-dec", tg.NewPage(
+		tg.NewScreen("/start/inc-dec", tg.NewPage(
 				"The screen shows how "+
 					"user separated data works "+
 					"by saving the counter for each of users "+
@@ -132,7 +135,7 @@ var beh = tg.NewBehaviour().
 			}),
 		),
 
-		tg.NewScreen("start/upper-case", tg.NewPage(
+		tg.NewScreen("/start/upper-case", tg.NewPage(
 				"Type text and the bot will send you the upper case version to you",
 			).WithReply(
 				navToStartKeyboard.Widget(""),
@@ -141,7 +144,7 @@ var beh = tg.NewBehaviour().
 			),
 		),
 
-		tg.NewScreen("start/lower-case", tg.NewPage(
+		tg.NewScreen("/start/lower-case", tg.NewPage(
 				"Type text and the bot will send you the lower case version",
 			).WithReply(
 				navToStartKeyboard.Widget(""),
@@ -150,7 +153,7 @@ var beh = tg.NewBehaviour().
 			),
 		),
 
-		tg.NewScreen("start/send-location", tg.NewPage(
+		tg.NewScreen("/start/send-location", tg.NewPage(
 				"",
 			).WithReply(
 				sendLocationKeyboard.Widget("Press the button to send your location!"),
@@ -172,7 +175,7 @@ var beh = tg.NewBehaviour().
 			Desc("start or restart the bot or move to the start screen").
 			ActionFunc(func(c *tg.Context){
 				c.Sendf("Your username is %q", c.Message.From.UserName)
-				c.ChangeScreen("start")
+				c.ChangeScreen("/start")
 			}),
 		tg.NewCommand("hello").
 			Desc("sends the 'Hello, World!' message back").
@@ -181,9 +184,9 @@ var beh = tg.NewBehaviour().
 			}),
 		tg.NewCommand("read").
 			Desc("reads a string and sends it back").
-			WidgetFunc(func(c *tg.Context, updates *tg.UpdateChan) {
+			WidgetFunc(func(c *tg.Context) {
 				c.Sendf("Type text and I will send it back to you")
-				for u := range updates.Chan() {
+				for u := range c.Input() {
 					if u.Message == nil {
 						continue
 					}

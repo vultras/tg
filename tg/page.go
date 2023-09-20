@@ -85,26 +85,24 @@ func (p *Page) Filter(
 	return false
 }
 
-func (p *Page) Serve(
-	c *Context, updates *UpdateChan,
-) {
-	msgs, _ := c.Render(p)
-	inlineMsg := msgs["page/inline"]
+func (p *Page) Serve(c *Context) {
 	if p.Action != nil {
 		c.Run(p.Action, c.Update)
 	}
+	msgs, _ := c.Render(p)
+	inlineMsg := msgs["page/inline"]
 
-	subUpdates := c.RunWidgetBg(p.SubWidget)
+	subUpdates := c.RunWidget(p.SubWidget)
 	defer subUpdates.Close()
 
-	inlineUpdates := c.RunWidgetBg(p.Inline)
+	inlineUpdates := c.RunWidget(p.Inline)
 	defer inlineUpdates.Close()
 
-	replyUpdates := c.RunWidgetBg(p.Reply)
+	replyUpdates := c.RunWidget(p.Reply)
 	defer replyUpdates.Close()
 
 	subFilter, subFilterOk := p.SubWidget.(Filterer)
-	for u := range updates.Chan() {
+	for u := range c.Input() {
 		switch {
 		case !p.Inline.Filter(u, MessageMap{"": inlineMsg}) :
 			inlineUpdates.Send(u)

@@ -153,10 +153,7 @@ func (widget *Command) Filter(
 	return false
 }
 
-func (widget *CommandWidget) Serve(
-	c *Context,
-	updates *UpdateChan,
-) {
+func (widget *CommandWidget) Serve(c *Context) {
 	commanders := make(map[CommandName] BotCommander)
 	for k, v := range widget.Commands {
 		commanders[k] = v
@@ -167,7 +164,7 @@ func (widget *CommandWidget) Serve(
 	)
 
 	var cmdUpdates *UpdateChan
-	for u := range updates.Chan() {
+	for u := range c.Input() {
 		if c.ScreenId() == "" && u.Message != nil {
 			// Skipping and executing the preinit action
 			// while we have the empty screen.
@@ -190,20 +187,12 @@ func (widget *CommandWidget) Serve(
 			c.Run(cmd.Action, u)
 			if cmd.Widget != nil {
 				cmdUpdates.Close()
-				cmdUpdates = NewUpdateChan()
-				go func() {
-					cmd.Widget.Serve(
-						&Context{context: c.context, Update: u},
-						cmdUpdates,
-					)
-					cmdUpdates.Close()
-					cmdUpdates = nil
-				}()
+				cmdUpdates = c.RunWidget(cmd.Widget)
 			}
 			continue
 		}
 		
-		if cmdUpdates != nil {
+		if !cmdUpdates.Closed()  {
 			// Send to the commands channel if we are
 			// executing one.
 			cmdUpdates.Send(u)

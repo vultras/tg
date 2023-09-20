@@ -13,7 +13,7 @@ type Widget interface {
 	// widget MUST end its work.
 	// Mostly made by looping over the
 	// updates range.
-	Serve(*Context, *UpdateChan)
+	Serve(*Context)
 }
 
 // Needs implementation.
@@ -49,11 +49,13 @@ func (updates *UpdateChan) Chan() chan *Update {
 }
 
 // Send an update to the channel.
-func (updates *UpdateChan) Send(u *Update) {
-	if updates != nil && updates.chn == nil {
-		return
+// Returns true if the update was sent.
+func (updates *UpdateChan) Send(u *Update) bool {
+	if updates == nil || updates.chn == nil {
+		return false
 	}
 	updates.chn <- u
+	return true
 }
 
 // Read an update from the channel.
@@ -66,7 +68,7 @@ func (updates *UpdateChan) Read() *Update {
 
 // Returns true if the channel is closed.
 func (updates *UpdateChan) Closed() bool {
-	return updates.chn == nil
+	return updates==nil || updates.chn == nil
 }
 
 // Close the channel. Used in defers.
@@ -78,16 +80,6 @@ func (updates *UpdateChan) Close() {
 	updates.chn = nil
 }
 
-func (c *Context) RunWidgetBg(widget Widget) *UpdateChan {
-	if widget == nil {
-		return nil
-	}
-
-	updates := NewUpdateChan()
-	go widget.Serve(c, updates)
-
-	return updates
-}
 
 // Implementing the interface provides 
 type DynamicWidget interface {
@@ -96,10 +88,10 @@ type DynamicWidget interface {
 
 // The function that implements the Widget
 // interface.
-type WidgetFunc func(*Context, *UpdateChan)
+type WidgetFunc func(*Context)
 
-func (wf WidgetFunc) Serve(c *Context, updates *UpdateChan) {
-	wf(c, updates)
+func (wf WidgetFunc) Serve(c *Context) {
+	wf(c)
 }
 
 func (wf WidgetFunc) Filter(
@@ -145,11 +137,8 @@ func (widget *InlineKeyboardWidget) SendConfig(
 	return ret
 }
 
-func (widget *InlineKeyboardWidget) Serve(
-	c *Context,
-	updates *UpdateChan,
-) {
-	for u := range updates.Chan() {
+func (widget *InlineKeyboardWidget) Serve(c *Context) {
+	for u := range c.Input() {
 		var act Action
 		if u.CallbackQuery == nil {
 			continue
@@ -263,11 +252,8 @@ func (widget *ReplyKeyboardWidget) Filter(
 	return false
 }
 
-func (widget *ReplyKeyboardWidget) Serve(
-	c *Context,
-	updates *UpdateChan,
-) {
-	for u := range updates.Chan() {
+func (widget *ReplyKeyboardWidget) Serve(c *Context) {
+	for u := range c.Input() {
 		var btn *Button
 		text := u.Message.Text
 		btns := widget.ButtonMap()

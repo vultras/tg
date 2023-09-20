@@ -233,7 +233,8 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 				go (&Context{
 					context: ctx,
 					Update: u,
-				}).Serve(chn)
+					input: chn,
+				}).serve()
 			}
 		} else if u.Message != nil {
 			// Create session on any message
@@ -249,7 +250,8 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 			go (&Context{
 				context: ctx,
 				Update: u,
-			}).Serve(chn)
+				input: chn,
+			}).serve()
 		}
 
 		chn, ok := chans[sid]
