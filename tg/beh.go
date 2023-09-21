@@ -37,8 +37,13 @@ func (b *Behaviour) WithInitFunc(
 	return b.WithInit(fn)
 }
 
+func (b *Behaviour) WithRootNode(node *RootNode) *Behaviour {
+	b.Screens = node.ScreenMap()
+	return b
+}
+
 // The function sets screens.
-func (b *Behaviour) WithScreens(
+/*func (b *Behaviour) WithScreens(
 	screens ...*Screen,
 ) *Behaviour {
 	for _, screen := range screens {
@@ -52,7 +57,7 @@ func (b *Behaviour) WithScreens(
 		b.Screens[screen.Id] = screen
 	}
 	return b
-}
+}*/
 
 // The function sets as the standard root widget CommandWidget
 // and its commands..
@@ -69,18 +74,19 @@ func (b *Behaviour) WithCommands(cmds ...*Command) *Behaviour {
 }
 
 // Check whether the screen exists in the behaviour.
-func (beh *Behaviour) ScreenExist(id ScreenId) bool {
-	_, ok := beh.Screens[id]
+func (beh *Behaviour) PathExist(pth Path) bool {
+	_, ok := beh.Screens[pth]
 	return ok
 }
 
 // Returns the screen by it's ID.
-func (beh *Behaviour) GetScreen(id ScreenId) *Screen {
-	if !beh.ScreenExist(id) {
+func (beh *Behaviour) GetScreen(pth Path) *Screen {
+	pth = pth.Clean()
+	if !beh.PathExist(pth) {
 		panic(ScreenNotExistErr)
 	}
 
-	screen := beh.Screens[id]
+	screen := beh.Screens[pth]
 	return screen
 }
 

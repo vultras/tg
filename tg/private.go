@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"path"
+	//"path"
 )
 
 type ContextType string
@@ -25,7 +25,7 @@ type context struct {
 	Bot     *Bot
 	skippedUpdates *UpdateChan
 	// Current screen ID.
-	screenId, prevScreenId ScreenId
+	path, prevPath Path
 }
 
 // Goroutie function to handle each user.
@@ -42,17 +42,17 @@ func (c *context) run(a Action, u *Update) {
 	a.Act(&Context{context: c, Update:  u})
 }
 
-func (c *Context) CurScreen() ScreenId {
-	return c.screenId
+func (c *Context) Path() Path {
+	return c.path
 }
 
-func (c *Context) PrevScreen() ScreenId {
-	return c.prevScreenId
+func (c *Context) PrevPath() Path {
+	return c.prevPath
 }
 
 func (c *Context) Run(a Action, u *Update) {
 	if a != nil {
-		a.Act(&Context{context: c.context, Update: u})
+		a.Act(c.Copy().WithUpdate(u))
 	}
 }
 
@@ -144,13 +144,13 @@ func (af ActionFunc) Act(c *Context) {
 }
 
 // The type implements changing screen to the underlying ScreenId
-type ScreenChange ScreenId
+type ScreenChange Path
 
 func (sc ScreenChange) Act(c *Context) {
-	if !c.Bot.behaviour.ScreenExist(ScreenId(sc)) {
+	if !c.Bot.behaviour.PathExist(Path(sc)) {
 		panic(ScreenNotExistErr)
 	}
-	err := c.Go(ScreenId(sc))
+	err := c.Go(Path(sc))
 	if err != nil {
 		panic(err)
 	}
@@ -159,18 +159,22 @@ func (sc ScreenChange) Act(c *Context) {
 type C = Context
 
 // Changes screen of user to the Id one.
-func (c *Context) Go(screenId ScreenId, args ...any) error {
-	if !c.Bot.behaviour.ScreenExist(screenId) {
+func (c *Context) Go(pth Path, args ...any) error {
+	if !c.PathExist(pth) {
 		return ScreenNotExistErr
 	}
 
 	// Getting the screen and changing to
 	// then executing its widget.
-	screen := c.Bot.behaviour.Screens[screenId]
-	c.prevScreenId = c.screenId
-	c.screenId = screenId
+	if !pth.IsAbs() {
+		pth = (c.Path() + "/" + pth).Clean()
+	}
+
+	c.prevPath = c.path
+	c.path = pth
 
 	// Stopping the current widget.
+	screen := c.Bot.behaviour.Screens[pth]
 	c.skippedUpdates.Close()
 	if screen.Widget != nil {
 		c.skippedUpdates = c.RunWidget(screen.Widget, args...)
@@ -179,6 +183,10 @@ func (c *Context) Go(screenId ScreenId, args ...any) error {
 	}
 
 	return nil
+}
+
+func (c *Context) PathExist(pth Path) bool {
+	return c.Bot.behaviour.PathExist(pth)
 }
 
 // Run widget in background returning the new input channel for it.
@@ -209,12 +217,18 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 	return updates
 }
 
+// Go to the root screen.
+func (c *Context) GoRoot() {
+	c.Go("/")
+}
+
+// Go one level upper in the screen hierarchy.
 func (c *Context) GoUp() {
-	c.Go(ScreenId(path.Dir(string(c.CurScreen()))))
+	c.Go(c.Path().Dir())
 }
 
 // Change screen to the previous.
 // To get to the parent screen use GoUp.
 func (c *Context) GoPrev() {
-	c.Go(c.PrevScreen())
+	c.Go(c.PrevPath())
 }

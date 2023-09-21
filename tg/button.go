@@ -63,7 +63,7 @@ func (btn *Button) ActionFunc(fn ActionFunc) *Button {
 	return btn.WithAction(fn)
 }
 
-func (btn *Button) ScreenChange(sc ScreenChange) *Button {
+func (btn *Button) Go(sc ScreenChange) *Button {
 	return btn.WithAction(sc)
 }
 

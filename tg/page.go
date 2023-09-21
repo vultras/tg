@@ -15,10 +15,14 @@ type Page struct {
 }
 
 // Return new page with the specified text.
-func NewPage(text string) *Page {
+func NewPage() *Page {
 	ret := &Page{}
-	ret.Text = text
 	return ret
+}
+
+func (p *Page) WithText(text string) *Page {
+	p.Text = text
+	return p
 }
 
 // Set the inline keyboard.

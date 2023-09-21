@@ -51,10 +51,7 @@ func ExtractSessionData(c *tg.Context) *SessionData {
 }
 
 var (
-	startScreenButton = tg.NewButton("Back").ActionFunc(func(c *tg.Context){
-		c.GoUp()
-	})
-
+	startScreenButton = tg.NewButton("Home").Go("/")
 	incDecKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
 			d := ExtractSessionData(c)
@@ -71,14 +68,14 @@ var (
 	)
 
 	navKeyboard = tg.NewKeyboard().Row(
-		tg.NewButton("Inc/Dec").ScreenChange("/start/inc-dec"),
+		tg.NewButton("Inc/Dec").Go("/inc-dec"),
 	).Row(
 		tg.NewButton("Upper case").ActionFunc(func(c *tg.Context){
-			c.Go("/start/upper-case", "this shit", "works")
+			c.Go("/upper-case", "this shit", "works")
 		}),
-		tg.NewButton("Lower case").ScreenChange("/start/lower-case"),
+		tg.NewButton("Lower case").Go("/case"),
 	).Row(
-		tg.NewButton("Send location").ScreenChange("/start/send-location"),
+		tg.NewButton("Send location").Go("/send-location"),
 	).Reply().WithOneTime(true)
 
 	sendLocationKeyboard = tg.NewKeyboard().Row(
@@ -106,124 +103,106 @@ var (
 	).Reply()
 )
 
-var theNode = tg.NewNode(
-	"/", tg.WidgetFunc(func(c *tg.Context){
-		c.Go("/start")
-	}),
-	tg.NewNode(
-		"start", tg.WidgetFunc(func(c *tg.Context){}),
-		tg.NewNode(
-			"profile", tg.WidgetFunc(func(c *tg.Context){}),
-		),
-		tg.NewNode(
-			"upper-case", tg.WidgetFunc(func(c *tg.Context){}),
-		),
-	),
-)
-
 var beh = tg.NewBehaviour().
-	WithInitFunc(func(c *tg.Context) {
-		// The session initialization.
-		c.Session.Data = &SessionData{}
-	}).WithScreens(
-		tg.NewScreen("/start", tg.NewPage(
-				"",
-			).WithInline(
-				tg.NewKeyboard().Row(
-					tg.NewButton("GoT Github page").
-						WithUrl("https://github.com/mojosa-software/got"),
-				).Inline().Widget("The bot started!"),
-			).WithReply(
-				navKeyboard.Widget("Choose what you are interested in"),
-			),
+WithInitFunc(func(c *tg.Context) {
+	// The session initialization.
+	c.Session.Data = &SessionData{}
+}).WithRootNode(tg.NewRootNode(
+	// The "/" widget.
+	tg.NewPage().
+		WithInline(
+			tg.NewKeyboard().Row(
+				tg.NewButton("GoT Github page").
+					WithUrl("https://github.com/mojosa-software/got"),
+			).Inline().Widget("The bot started!"),
+		).WithReply(
+			navKeyboard.Widget("Choose what you are interested in"),
 		),
-		tg.NewScreen("/start/inc-dec", tg.NewPage(
-				"The screen shows how "+
-					"user separated data works "+
-					"by saving the counter for each of users "+
-					"separately. ",
-			).WithReply(
+
+	tg.NewNode(
+		"inc-dec", tg.NewPage().WithReply(
 				incDecKeyboard.Reply().Widget("Press the buttons to increment and decrement"),
 			).ActionFunc(func(c *tg.Context) {
 				// The function will be calleb before serving page.
 				d := ExtractSessionData(c)
 				c.Sendf("Current counter value = %d", d.Counter)
 			}),
-		),
+	),
 
-		tg.NewScreen("/start/upper-case", tg.NewPage(
+	tg.NewNode(
+		"upper-case", tg.NewPage().WithText(
 				"Type text and the bot will send you the upper case version to you",
 			).WithReply(
 				navToStartKeyboard.Widget(""),
 			).WithSub(
 				NewMutateMessageWidget(strings.ToUpper),
 			),
-		),
+	),
 
-		tg.NewScreen("/start/lower-case", tg.NewPage(
+	tg.NewNode(
+		"lower-case", tg.NewPage().WithText(
 				"Type text and the bot will send you the lower case version",
 			).WithReply(
 				navToStartKeyboard.Widget(""),
 			).WithSub(
 				NewMutateMessageWidget(strings.ToLower),
 			),
-		),
+	),
 
-		tg.NewScreen("/start/send-location", tg.NewPage(
-				"",
-			).WithReply(
-				sendLocationKeyboard.Widget("Press the button to send your location!"),
-			).WithInline(
-				tg.NewKeyboard().Row(
-					tg.NewButton(
-						"Check",
-					).WithData(
-						"check",
-					).ActionFunc(func(c *tg.Context) {
-							d := ExtractSessionData(c)
-							c.Sendf("Counter = %d", d.Counter)
-					}),
-				).Inline().Widget("Press the button to display your counter"),
-			),
+	tg.NewNode(
+		"send-location", tg.NewPage().WithReply(
+			sendLocationKeyboard.Widget("Press the button to send your location!"),
+		).WithInline(
+			tg.NewKeyboard().Row(
+				tg.NewButton(
+					"Check",
+				).WithData(
+					"check",
+				).ActionFunc(func(c *tg.Context) {
+					d := ExtractSessionData(c)
+					c.Sendf("Counter = %d", d.Counter)
+				}),
+			).Inline().Widget("Press the button to display your counter"),
 		),
-	).WithCommands(
-		tg.NewCommand("start").
-			Desc("start or restart the bot or move to the start screen").
-			ActionFunc(func(c *tg.Context){
-				c.Sendf("Your username is %q", c.Message.From.UserName)
-				c.Go("/start")
-			}),
-		tg.NewCommand("hello").
-			Desc("sends the 'Hello, World!' message back").
-			ActionFunc(func(c *tg.Context) {
-				c.Sendf("Hello, World!")
-			}),
-		tg.NewCommand("read").
-			Desc("reads a string and sends it back").
-			WidgetFunc(func(c *tg.Context) {
-				c.Sendf("Type text and I will send it back to you")
-				for u := range c.Input() {
-					if u.Message == nil {
-						continue
-					}
-					c.Sendf("You typed %q", u.Message.Text)
-					break
+	),
+)).WithCommands(
+	tg.NewCommand("start").
+		Desc("start or restart the bot or move to the start screen").
+		ActionFunc(func(c *tg.Context){
+			c.Sendf("Your username is %q", c.Message.From.UserName)
+			c.Go("/start")
+		}),
+	tg.NewCommand("hello").
+		Desc("sends the 'Hello, World!' message back").
+		ActionFunc(func(c *tg.Context) {
+			c.Sendf("Hello, World!")
+		}),
+	tg.NewCommand("read").
+		Desc("reads a string and sends it back").
+		WidgetFunc(func(c *tg.Context) {
+			c.Sendf("Type text and I will send it back to you")
+			for u := range c.Input() {
+				if u.Message == nil {
+					continue
 				}
-				c.Sendf("Done")
-			}),
-		tg.NewCommand("image").
-			Desc("sends a sample image").
-			ActionFunc(func(c *tg.Context) {
-				img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
-				c.Send(img)
-			}),
-		tg.NewCommand("botname").
-			Desc("get the bot name").
-			ActionFunc(func(c *tg.Context) {
-				bd := c.Bot.Data.(*BotData)
-				c.Sendf("My name is %q", bd.Name)
-			}),
-	)
+				c.Sendf("You typed %q", u.Message.Text)
+				break
+			}
+			c.Sendf("Done")
+		}),
+	tg.NewCommand("image").
+		Desc("sends a sample image").
+		ActionFunc(func(c *tg.Context) {
+			img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
+			c.Send(img)
+		}),
+	tg.NewCommand("botname").
+		Desc("get the bot name").
+		ActionFunc(func(c *tg.Context) {
+			bd := c.Bot.Data.(*BotData)
+			c.Sendf("My name is %q", bd.Name)
+		}),
+)
 
 var gBeh = tg.NewGroupBehaviour().
 	InitFunc(func(c *tg.GC) {
@@ -239,8 +218,7 @@ var gBeh = tg.NewGroupBehaviour().
 	)
 
 func main() {
-	log.Println(theNode.ScreenMap())
-	return
+	log.Println(beh.Screens)
 	token := os.Getenv("BOT_TOKEN")
 
 	bot, err := tg.NewBot(token)
