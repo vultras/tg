@@ -1,11 +1,11 @@
 package tg
 
 import (
-	"encoding/json"
-	"reflect"
+	//"encoding/json"
+	//"reflect"
 )
 
-func (a *action) UnmarshalJSON(data []byte) error {
+/*func (a *action) UnmarshalJSON(data []byte) error {
 	var err error
 	m := make(map[string]any)
 	err = json.Unmarshal(data, &m)
@@ -31,4 +31,4 @@ func (a *action) UnmarshalJSON(data []byte) error {
 
 	a.Action = vr
 	return nil
-}
+}*/

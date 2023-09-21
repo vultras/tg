@@ -15,7 +15,7 @@ type CommandName string
 type Command struct {
 	Name        CommandName
 	Description string
-	Action      *action
+	Action      Action
 	Widget Widget
 }
 type CommandMap map[CommandName]*Command
@@ -27,7 +27,7 @@ func NewCommand(name CommandName) *Command {
 }
 
 func (c *Command) WithAction(a Action) *Command {
-	c.Action = newAction(a)
+	c.Action = a
 	return c
 }
 

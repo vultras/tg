@@ -6,7 +6,7 @@ package tg
 // The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
 	Root Widget
-	Init      *action
+	Init      Action
 	Screens   ScreenMap
 }
 
@@ -26,7 +26,7 @@ func (b *Behaviour) WithRoot(root Widget) *Behaviour {
 // The Action will be called on session creation,
 // not when starting or restarting the bot with the Start Action.
 func (b *Behaviour) WithInit(a Action) *Behaviour {
-	b.Init = newAction(a)
+	b.Init = a
 	return b
 }
 
