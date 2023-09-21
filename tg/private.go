@@ -143,33 +143,22 @@ func (af ActionFunc) Act(c *Context) {
 	af(c)
 }
 
-// The type implements changing screen to the underlying ScreenId
-type ScreenChange Path
-
-func (sc ScreenChange) Act(c *Context) {
-	if !c.Bot.behaviour.PathExist(Path(sc)) {
-		panic(ScreenNotExistErr)
-	}
-	err := c.Go(Path(sc))
-	if err != nil {
-		panic(err)
-	}
-}
 
 type C = Context
 
 // Changes screen of user to the Id one.
 func (c *Context) Go(pth Path, args ...any) error {
-	if !c.PathExist(pth) {
-		return ScreenNotExistErr
-	}
-
 	// Getting the screen and changing to
 	// then executing its widget.
 	if !pth.IsAbs() {
 		pth = (c.Path() + "/" + pth).Clean()
 	}
 
+	c.Sendf("path: %q\nmap: %v", pth, c.Bot.behaviour.Screens)
+
+	if !c.PathExist(pth) {
+		return ScreenNotExistErr
+	}
 	c.prevPath = c.path
 	c.path = pth
 
@@ -215,16 +204,6 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 	}()
 
 	return updates
-}
-
-// Go to the root screen.
-func (c *Context) GoRoot() {
-	c.Go("/")
-}
-
-// Go one level upper in the screen hierarchy.
-func (c *Context) GoUp() {
-	c.Go(c.Path().Dir())
 }
 
 // Change screen to the previous.

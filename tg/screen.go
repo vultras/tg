@@ -4,6 +4,24 @@ import (
 	"path"
 )
 
+// The type implements changing screen to the underlying ScreenId
+type ScreenGo struct {
+	Path Path
+	Args []any
+}
+
+func (sc ScreenGo) Act(c *Context) {
+	err := c.Go(sc.Path, sc.Args...)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// The same as Act.
+func (sc ScreenGo) Serve(c *Context) {
+	sc.Act(c)
+}
+
 // Unique identifier for the screen
 // and relative paths to the screen.
 type Path string
@@ -89,7 +107,7 @@ func (n *Node) ScreenMap(root Path) ScreenMap {
 	pth := (root + n.Path).Clean()
 	m[pth] = n.Screen
 	for _, sub := range n.Subs {
-		buf := sub.ScreenMap((pth + "/").Clean())
+		buf := sub.ScreenMap(pth + "/")
 		for k, v := range buf {
 			_, ok := m[k]
 			if ok {

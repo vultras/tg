@@ -63,8 +63,11 @@ func (btn *Button) ActionFunc(fn ActionFunc) *Button {
 	return btn.WithAction(fn)
 }
 
-func (btn *Button) Go(sc ScreenChange) *Button {
-	return btn.WithAction(sc)
+func (btn *Button) Go(pth Path, args ...any) *Button {
+	return btn.WithAction(ScreenGo{
+		Path: pth,
+		Args: args,
+	})
 }
 
 func (btn *Button) ToTelegram() apix.KeyboardButton {

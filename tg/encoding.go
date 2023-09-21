@@ -13,7 +13,7 @@ var (
 func initEncoding() {
 	actions := map[string]Action{
 		"action-func":   ActionFunc(nil),
-		"screen-change": ScreenChange(""),
+		"screen-change": ScreenGo{},
 	}
 	for k, action := range actions {
 		DefineAction(k, action)

@@ -52,6 +52,11 @@ func ExtractSessionData(c *tg.Context) *SessionData {
 
 var (
 	startScreenButton = tg.NewButton("Home").Go("/")
+	backButton = tg.NewButton("Back").Go("..")
+	backKeyboard = tg.NewKeyboard().Row(
+		backButton,
+	)
+
 	incDecKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
 			d := ExtractSessionData(c)
@@ -70,10 +75,7 @@ var (
 	navKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("Inc/Dec").Go("/inc-dec"),
 	).Row(
-		tg.NewButton("Upper case").ActionFunc(func(c *tg.Context){
-			c.Go("/upper-case", "this shit", "works")
-		}),
-		tg.NewButton("Lower case").Go("/case"),
+		tg.NewButton("Mutate messages").Go("/mutate-messages"),
 	).Row(
 		tg.NewButton("Send location").Go("/send-location"),
 	).Reply().WithOneTime(true)
@@ -120,6 +122,37 @@ WithInitFunc(func(c *tg.Context) {
 		),
 
 	tg.NewNode(
+		"mutate-messages", tg.NewPage().WithReply(
+			tg.NewKeyboard().Row(
+				tg.NewButton("Upper case").Go("upper-case"),
+				tg.NewButton("Lower case").Go("lower-case"),
+			).Row(
+				backButton,
+			).Reply().Widget(
+				"Choose the function to mutate string",
+			),
+		),
+		tg.NewNode(
+			"upper-case", tg.NewPage().WithReply(
+				backKeyboard.Reply().Widget(
+					"Type a string and the bot will convert it to upper case",
+				),
+			).WithSub(
+				NewMutateMessageWidget(strings.ToUpper),
+			),
+		),
+		tg.NewNode(
+			"lower-case", tg.NewPage().WithReply(
+				backKeyboard.Reply().Widget(
+					"Type a string and the bot will convert it to lower case",
+				),
+			).WithSub(
+				NewMutateMessageWidget(strings.ToLower),
+			),
+		),
+	),
+
+	tg.NewNode(
 		"inc-dec", tg.NewPage().WithReply(
 				incDecKeyboard.Reply().Widget("Press the buttons to increment and decrement"),
 			).ActionFunc(func(c *tg.Context) {
@@ -127,26 +160,6 @@ WithInitFunc(func(c *tg.Context) {
 				d := ExtractSessionData(c)
 				c.Sendf("Current counter value = %d", d.Counter)
 			}),
-	),
-
-	tg.NewNode(
-		"upper-case", tg.NewPage().WithText(
-				"Type text and the bot will send you the upper case version to you",
-			).WithReply(
-				navToStartKeyboard.Widget(""),
-			).WithSub(
-				NewMutateMessageWidget(strings.ToUpper),
-			),
-	),
-
-	tg.NewNode(
-		"lower-case", tg.NewPage().WithText(
-				"Type text and the bot will send you the lower case version",
-			).WithReply(
-				navToStartKeyboard.Widget(""),
-			).WithSub(
-				NewMutateMessageWidget(strings.ToLower),
-			),
 	),
 
 	tg.NewNode(
@@ -169,8 +182,7 @@ WithInitFunc(func(c *tg.Context) {
 	tg.NewCommand("start").
 		Desc("start or restart the bot or move to the start screen").
 		ActionFunc(func(c *tg.Context){
-			c.Sendf("Your username is %q", c.Message.From.UserName)
-			c.Go("/start")
+			c.Go("/")
 		}),
 	tg.NewCommand("hello").
 		Desc("sends the 'Hello, World!' message back").
@@ -227,7 +239,6 @@ func main() {
 	}
 	bot = bot.
 		WithBehaviour(beh).
-		WithGroupBehaviour(gBeh).
 		Debug(true)
 
 	bot.Data = &BotData{

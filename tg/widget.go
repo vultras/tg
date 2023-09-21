@@ -20,11 +20,11 @@ type Widget interface {
 	Serve(*Context)
 }
 
-// Needs implementation.
-// Behaviour can be the root widget or something like
-// that.
+// Implementing the interface provides ability to
+// be used as the root widget for contexts.
 type RootWidget interface {
 	Widget
+	SetSub(Widget)
 }
 
 // Implementing the interface provides way
@@ -34,6 +34,15 @@ type Filterer interface {
 	// Return true if should filter the update
 	// and not send it inside the widget.
 	Filter(*Update, MessageMap) bool
+}
+
+// General type function for faster typing.
+type Func func(*Context)
+func (f Func) Act(c *Context) {
+	f(c)
+}
+func (f Func) Serve(c *Context) {
+	f(c)
 }
 
 // The type represents general update channel.
@@ -47,6 +56,7 @@ func NewUpdateChan() *UpdateChan {
 	ret.chn = make(chan *Update)
 	return ret
 }
+
 
 func (updates *UpdateChan) Chan() chan *Update {
 	return updates.chn
