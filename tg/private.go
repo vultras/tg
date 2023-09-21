@@ -154,8 +154,6 @@ func (c *Context) Go(pth Path, args ...any) error {
 		pth = (c.Path() + "/" + pth).Clean()
 	}
 
-	c.Sendf("path: %q\nmap: %v", pth, c.Bot.behaviour.Screens)
-
 	if !c.PathExist(pth) {
 		return ScreenNotExistErr
 	}

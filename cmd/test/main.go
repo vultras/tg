@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"fmt"
 
 	"github.com/mojosa-software/got/tg"
 )
@@ -116,7 +117,13 @@ WithInitFunc(func(c *tg.Context) {
 			tg.NewKeyboard().Row(
 				tg.NewButton("GoT Github page").
 					WithUrl("https://github.com/mojosa-software/got"),
-			).Inline().Widget("The bot started!"),
+			).Inline().Widget(
+				fmt.Sprint(
+					"The testing bot started!\n",
+					"You can see the basics of usage in the ",
+					"cmd/test/main.go file!",
+				),
+			),
 		).WithReply(
 			navKeyboard.Widget("Choose what you are interested in"),
 		),
@@ -128,24 +135,28 @@ WithInitFunc(func(c *tg.Context) {
 				tg.NewButton("Lower case").Go("lower-case"),
 			).Row(
 				backButton,
-			).Reply().Widget(
+			).Reply().WithOneTime(true).Widget(
 				"Choose the function to mutate string",
 			),
 		),
 		tg.NewNode(
 			"upper-case", tg.NewPage().WithReply(
-				backKeyboard.Reply().Widget(
-					"Type a string and the bot will convert it to upper case",
-				),
+				backKeyboard.Reply().
+					WithOneTime(true).
+					Widget(
+						"Type a string and the bot will convert it to upper case",
+					),
 			).WithSub(
 				NewMutateMessageWidget(strings.ToUpper),
 			),
 		),
 		tg.NewNode(
 			"lower-case", tg.NewPage().WithReply(
-				backKeyboard.Reply().Widget(
-					"Type a string and the bot will convert it to lower case",
-				),
+				backKeyboard.Reply().
+					WithOneTime(true).
+					Widget(
+						"Type a string and the bot will convert it to lower case",
+					),
 			).WithSub(
 				NewMutateMessageWidget(strings.ToLower),
 			),
@@ -180,10 +191,9 @@ WithInitFunc(func(c *tg.Context) {
 	),
 )).WithCommands(
 	tg.NewCommand("start").
-		Desc("start or restart the bot or move to the start screen").
-		ActionFunc(func(c *tg.Context){
-			c.Go("/")
-		}),
+		Desc(
+			"start or restart the bot or move to the start screen",
+		).Go("/"),
 	tg.NewCommand("hello").
 		Desc("sends the 'Hello, World!' message back").
 		ActionFunc(func(c *tg.Context) {

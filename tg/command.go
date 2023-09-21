@@ -56,6 +56,13 @@ func (c *Command) Desc(desc string) *Command {
 	return c
 }
 
+func (c *Command) Go(pth Path, args ...any) *Command {
+	return c.WithAction(ScreenGo{
+		Path: pth,
+		Args: args,
+	})
+}
+
 type GroupCommand struct {
 	Name        CommandName
 	Description string
@@ -77,6 +84,7 @@ func (cmd *GroupCommand) WithAction(a GroupAction) *GroupCommand {
 func (cmd *GroupCommand) ActionFunc(fn GroupActionFunc) *GroupCommand {
 	return cmd.WithAction(fn)
 }
+
 
 func (cmd *GroupCommand) Desc(desc string) *GroupCommand {
 	cmd.Description = desc
@@ -142,7 +150,7 @@ func (w *CommandWidget) WithUsageFunc(fn ActionFunc) *CommandWidget {
 	return w.WithUsage(fn)
 }
 
-func (widget *Command) Filter(
+func (widget *CommandWidget) Filter(
 	u *Update,
 	msgs ...*Message,
 ) bool {
