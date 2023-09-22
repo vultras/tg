@@ -52,7 +52,7 @@ func ExtractSessionData(c *tg.Context) *SessionData {
 }
 
 var (
-	startScreenButton = tg.NewButton("Home").Go("/")
+	homeButton = tg.NewButton("Home").Go("/")
 	backButton = tg.NewButton("Back").Go("..")
 	backKeyboard = tg.NewKeyboard().Row(
 		backButton,
@@ -70,7 +70,7 @@ var (
 			c.Sendf("%d", d.Counter)
 		}),
 	).Row(
-		startScreenButton,
+		backButton,
 	)
 
 	navKeyboard = tg.NewKeyboard().Row(
@@ -97,12 +97,7 @@ var (
 				)
 			}),
 	).Row(
-		startScreenButton,
-	).Reply()
-
-	// The keyboard to return to the start screen.
-	navToStartKeyboard = tg.NewKeyboard().Row(
-		startScreenButton,
+		backButton,
 	).Reply()
 )
 
@@ -190,6 +185,10 @@ WithInitFunc(func(c *tg.Context) {
 		),
 	),
 )).WithCommands(
+	tg.NewCommand("info").
+		ActionFunc(func(c *tg.Context){
+			c.SendfHTML(`<a href="https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg">cock</a><strong>cock</strong> die`)
+		}),
 	tg.NewCommand("start").
 		Desc(
 			"start or restart the bot or move to the start screen",
@@ -201,17 +200,16 @@ WithInitFunc(func(c *tg.Context) {
 		}),
 	tg.NewCommand("read").
 		Desc("reads a string and sends it back").
-		WidgetFunc(func(c *tg.Context) {
-			c.Sendf("Type text and I will send it back to you")
-			for u := range c.Input() {
-				if u.Message == nil {
-					continue
-				}
-				c.Sendf("You typed %q", u.Message.Text)
-				break
-			}
-			c.Sendf("Done")
-		}),
+		WithWidget(
+			tg.NewTextMessageRead(
+				tg.Func(func(c *tg.Context){
+					c.Sendf("Type a string and it will send it back")
+				}),
+				tg.Func(func(c *tg.Context){
+					c.Sendf("You typed %q", c.Message.Text)
+				}),
+			),
+		),
 	tg.NewCommand("image").
 		Desc("sends a sample image").
 		ActionFunc(func(c *tg.Context) {

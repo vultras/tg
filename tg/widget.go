@@ -36,6 +36,13 @@ type Filterer interface {
 	Filter(*Update, MessageMap) bool
 }
 
+type FilterFunc func(*Update, MessageMap) bool
+func (f FilterFunc) Filter(
+	u *Update, msgs MessageMap,
+) bool {
+	return f(u, msgs)
+}
+
 // General type function for faster typing.
 type Func func(*Context)
 func (f Func) Act(c *Context) {
@@ -224,6 +231,13 @@ func (widget *ReplyKeyboardWidget) SendConfig(
 	sid SessionId,
 	bot *Bot,
 ) (*SendConfig) {
+	if widget == nil {
+		msgConfig := tgbotapi.NewMessage(sid.ToApi(), ">")
+		msgConfig.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+		return &SendConfig{
+			Message: &msgConfig,
+		}
+	}
 	var text string
 	if widget.Text != "" {
 		text = widget.Text
