@@ -79,7 +79,7 @@ var (
 		tg.NewButton("Mutate messages").Go("/mutate-messages"),
 	).Row(
 		tg.NewButton("Send location").Go("/send-location"),
-	).Reply().WithOneTime(true)
+	).Reply()
 
 	sendLocationKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("Send location").
@@ -130,14 +130,13 @@ WithInitFunc(func(c *tg.Context) {
 				tg.NewButton("Lower case").Go("lower-case"),
 			).Row(
 				backButton,
-			).Reply().WithOneTime(true).Widget(
+			).Reply().Widget(
 				"Choose the function to mutate string",
 			),
 		),
 		tg.NewNode(
 			"upper-case", tg.NewPage().WithReply(
 				backKeyboard.Reply().
-					WithOneTime(true).
 					Widget(
 						"Type a string and the bot will convert it to upper case",
 					),
@@ -148,7 +147,6 @@ WithInitFunc(func(c *tg.Context) {
 		tg.NewNode(
 			"lower-case", tg.NewPage().WithReply(
 				backKeyboard.Reply().
-					WithOneTime(true).
 					Widget(
 						"Type a string and the bot will convert it to lower case",
 					),
@@ -201,14 +199,10 @@ WithInitFunc(func(c *tg.Context) {
 	tg.NewCommand("read").
 		Desc("reads a string and sends it back").
 		WithWidget(
-			tg.NewTextMessageRead(
-				tg.Func(func(c *tg.Context){
-					c.Sendf("Type a string and it will send it back")
-				}),
-				tg.Func(func(c *tg.Context){
-					c.Sendf("You typed %q", c.Message.Text)
-				}),
-			),
+			tg.Func(func(c *tg.Context){
+				str := c.ReadString("Type a string and I will send it back")
+				c.Sendf2("You typed `%s`", str)
+			}),
 		),
 	tg.NewCommand("image").
 		Desc("sends a sample image").

@@ -204,6 +204,20 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 	return updates
 }
 
+// Simple way to read strings for widgets.
+func (c *Context) ReadString(pref string, args ...any) string {
+	var text string
+	c.Sendf(pref, args...)
+	for u := range c.Input() {
+		if u.Message == nil {
+			continue
+		}
+		text = u.Message.Text
+		break
+	}
+	return text
+}
+
 // Change screen to the previous.
 // To get to the parent screen use GoUp.
 func (c *Context) GoPrev() {
