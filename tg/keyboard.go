@@ -1,7 +1,7 @@
 package tg
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 // The general keyboard type used both in Reply and Inline.
@@ -11,15 +11,6 @@ type Keyboard struct {
 	Action Action
 	Rows []ButtonRow
 	buttonMap ButtonMap
-}
-
-// The type represents reply keyboards.
-type ReplyKeyboard struct {
-	*Keyboard
-	// If true will be removed after one press.
-	OneTime bool
-	// If true will remove the keyboard on send.
-	Remove bool
 }
 
 // Returns the new keyboard with specified rows.
@@ -69,88 +60,16 @@ func (kbd Keyboard) ButtonMap() ButtonMap {
 }
 
 // Convert the keyboard to the more specific inline one.
-func (kbd *Keyboard) Inline() *InlineKeyboard {
-	ret := &InlineKeyboard{}
+func (kbd *Keyboard) Inline() *Inline {
+	ret := &Inline{}
 	ret.Keyboard = kbd
 	return ret
 }
 
-func (kbd *Keyboard) Reply() *ReplyKeyboard {
-	ret := &ReplyKeyboard{}
+// Convert the keyboard to the more specific reply one.
+func (kbd *Keyboard) Reply() *Reply {
+	ret := &Reply{}
 	ret.Keyboard = kbd
 	return ret
 }
-
-// The type represents keyboard to be emdedded into the messages.
-type InlineKeyboard struct {
-	*Keyboard
-}
-
-// Transform the keyboard to widget with the specified text.
-func (kbd *InlineKeyboard) Widget(text string) *InlineKeyboardWidget {
-	ret := &InlineKeyboardWidget{}
-	ret.InlineKeyboard = kbd
-	ret.Text = text
-	return ret
-}
-
-// Transform the keyboard to widget with the specified text.
-func (kbd *ReplyKeyboard) Widget(text string) *ReplyKeyboardWidget {
-	ret := &ReplyKeyboardWidget{}
-	ret.ReplyKeyboard = kbd
-	ret.Text = text
-	return ret
-}
-
-// Convert the Keyboard to the Telegram API type of reply keyboard.
-func (kbd *ReplyKeyboard) ToApi() any {
-	// Shades everything.
-	if kbd.Remove {
-		return tgbotapi.NewRemoveKeyboard(true)
-	}
-
-	rows := [][]tgbotapi.KeyboardButton{}
-	for _, row := range kbd.Rows {
-		buttons := []tgbotapi.KeyboardButton{}
-		for _, button := range row {
-			buttons = append(buttons, button.ToTelegram())
-		}
-		rows = append(rows, buttons)
-	}
-
-	if kbd.OneTime {
-		return tgbotapi.NewOneTimeReplyKeyboard(rows...)
-	}
-
-	return tgbotapi.NewReplyKeyboard(rows...)
-}
-
-// Convert the inline keyboard to markup for the tgbotapi.
-func (kbd *InlineKeyboard) ToApi() tgbotapi.InlineKeyboardMarkup {
-	rows := [][]tgbotapi.InlineKeyboardButton{}
-	for _, row := range kbd.Rows {
-		buttons := []tgbotapi.InlineKeyboardButton{}
-		for _, button := range row {
-			buttons = append(buttons, button.ToTelegramInline())
-		}
-		rows = append(rows, buttons)
-	}
-
-	return tgbotapi.NewInlineKeyboardMarkup(rows...)
-}
-
-// Set if we should remove current keyboard on the user side
-// when sending the keyboard.
-func (kbd *ReplyKeyboard) WithRemove(remove bool) *ReplyKeyboard {
-	kbd.Remove = remove
-	return kbd
-}
-
-// Set if the keyboard should be hidden after
-// one of buttons is pressede.
-func (kbd *ReplyKeyboard) WithOneTime(oneTime bool) *ReplyKeyboard {
-	kbd.OneTime = oneTime
-	return kbd
-}
-
 

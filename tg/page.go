@@ -7,11 +7,11 @@ import (
 // The basic widget to provide keyboard functionality
 // without implementing much.
 type Page struct {
+	Action Action
 	Text string
 	SubWidget Widget
-	Inline *InlineKeyboardWidget
-	Action Action
-	Reply *ReplyKeyboardWidget
+	Inline *InlineWidget
+	Reply *ReplyWidget
 }
 
 // Return new page with the specified text.
@@ -26,13 +26,13 @@ func (p *Page) WithText(text string) *Page {
 }
 
 // Set the inline keyboard.
-func (p *Page) WithInline(inline *InlineKeyboardWidget) *Page {
+func (p *Page) WithInline(inline *InlineWidget) *Page {
 	p.Inline = inline
 	return p
 }
 
 // Set the reply keyboard.
-func (p *Page) WithReply(reply *ReplyKeyboardWidget) *Page {
+func (p *Page) WithReply(reply *ReplyWidget) *Page {
 	p.Reply = reply
 	return p
 }
