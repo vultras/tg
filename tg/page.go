@@ -90,8 +90,13 @@ func (p *Page) Filter(
 }
 
 func (p *Page) Serve(c *Context) {
+	pth := c.Path()
 	if p.Action != nil {
 		c.Run(p.Action, c.Update)
+		if pth != c.Path() {
+			// If we went somewhere else then do nothing.
+			return
+		}
 	}
 	msgs, _ := c.Render(p)
 	inlineMsg := msgs["page/inline"]

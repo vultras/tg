@@ -221,5 +221,9 @@ func (c *Context) ReadString(pref string, args ...any) string {
 // Change screen to the previous.
 // To get to the parent screen use GoUp.
 func (c *Context) GoPrev() {
-	c.Go(c.PrevPath())
+	pth := c.PrevPath()
+	if pth == "" {
+		c.Go("/")
+	}
+	c.Go(pth)
 }
