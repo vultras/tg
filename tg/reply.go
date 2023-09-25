@@ -59,50 +59,44 @@ func (kbd *Reply) Widget(text string) *ReplyWidget {
 }
 
 // The type implements reply keyboard widget.
-type ReplyWidget struct {
+type ReplyCompo struct {
 	Text string
 	*Reply
 }
 
 // Implementing the sendable interface.
-func (widget *ReplyWidget) SendConfig(
-	sid SessionId,
-	bot *Bot,
+func (compo *ReplyCompo) Render(
+	c *Context,
 ) (*SendConfig) {
-	if widget == nil {
-		msgConfig := tgbotapi.NewMessage(sid.ToApi(), ">")
+	sid := c.Session.Id.ToApi()
+	if compo == nil {
+		msgConfig := tgbotapi.NewMessage(sid, ">")
 		msgConfig.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 		return &SendConfig{
 			Message: &msgConfig,
 		}
 	}
 	var text string
-	if widget.Text != "" {
-		text = widget.Text
+	if compo.Text != "" {
+		text = compo.Text
 	} else {
 		text = ">"
 	}
 
-	msgConfig := tgbotapi.NewMessage(sid.ToApi(), text)
-	msgConfig.ReplyMarkup = widget.ToApi()
+	msgConfig := tgbotapi.NewMessage(sid, text)
+	msgConfig.ReplyMarkup = compo.ToApi()
 
 	ret := &SendConfig{}
 	ret.Message = &msgConfig
 	return ret
 }
 
-func (widget *ReplyWidget) Filter(
+func (compo *ReplyCompo) Filter(
 	u *Update,
-	msgs MessageMap,
 ) bool {
-	if widget == nil {
+	if compo == nil || u.Message == nil {
 		return true
 	}
-
-	if u.Message == nil {
-		return true
-	}
-
 
 	_, ok := widget.ButtonMap()[u.Message.Text]
 	if !ok {
@@ -119,11 +113,8 @@ func (widget *ReplyWidget) Filter(
 }
 
 // Implementing the Widget interface.
-func (widget *ReplyWidget) Serve(c *Context) {
+func (compo *ReplyCompo) Serve(c *Context) {
 	for u := range c.Input() {
-		if u.Message == nil || u.Message.Text == "" {
-			continue
-		}
 		var btn *Button
 		text := u.Message.Text
 		btns := widget.ButtonMap()

@@ -5,16 +5,12 @@ import (
 )
 
 type MessageId int64
-type Image any
 
-// Implementing the interface lets the
-// value to be sent.
-type Sendable interface {
-	SendConfig(SessionId, *Bot) *SendConfig
-}
-
+// Implementing the interface provides
+// way to define what message will be
+// sent to the side of a user.
 type Renderable interface {
-	Render(SessionId, *Bot) ([]*SendConfig)
+	Render(*Context) (*SendConfig)
 }
 
 type Errorer interface {

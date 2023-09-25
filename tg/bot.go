@@ -47,10 +47,12 @@ func (bot *Bot) Debug(debug bool) *Bot {
 	return bot
 }
 
+// Send the Renderable to the specified session client side.
+// Can be used for both group and private sessions.
 func (bot *Bot) Send(
-	sid SessionId, v Sendable,
+	sid SessionId, v Renderable,
 ) (*Message, error) {
-	config  := v.SendConfig(sid, bot)
+	config  := v.Render(sid, bot)
 	if config.Error != nil {
 		return nil, config.Error
 	}

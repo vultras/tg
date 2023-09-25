@@ -7,6 +7,8 @@ import (
 	"fmt"
 
 	"github.com/mojosa-software/got/tg"
+	"math/rand"
+	"strconv"
 )
 
 type BotData struct {
@@ -73,13 +75,7 @@ var (
 		backButton,
 	)
 
-	navKeyboard = tg.NewKeyboard().Row(
-		tg.NewButton("Inc/Dec").Go("/inc-dec"),
-	).Row(
-		tg.NewButton("Mutate messages").Go("/mutate-messages"),
-	).Row(
-		tg.NewButton("Send location").Go("/send-location"),
-	).Reply()
+	navKeyboard = 
 
 	sendLocationKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("Send location").
@@ -107,21 +103,34 @@ WithInitFunc(func(c *tg.Context) {
 	c.Session.Data = &SessionData{}
 }).WithRootNode(tg.NewRootNode(
 	// The "/" widget.
-	tg.NewPage().
-		WithInline(
+	tg.WidgetFunc(func(c *tg.Context) tg.UIs {
+		return tg.UIs{
+
 			tg.NewKeyboard().Row(
-				tg.NewButton("GoT Github page").
-					WithUrl("https://github.com/mojosa-software/got"),
-			).Inline().Widget(
-				fmt.Sprint(
-					"The testing bot started!\n",
-					"You can see the basics of usage in the ",
-					"cmd/test/main.go file!",
+					tg.NewButton("GoT Github page").
+						WithUrl("https://github.com/mojosa-software/got"),
+				).Inline().Widget(
+					fmt.Sprintf(
+						"Hello, %s"
+						"The testing bot started!\n",
+						"You can see the basics of usage in the ",
+						"cmd/test/main.go file!",
+						c.SentFrom().UserName,
+					),
 				),
-			),
-		).WithReply(
-			navKeyboard.Widget("Choose what you are interested in"),
-		),
+
+			tg.NewKeyboard().Row(
+					tg.NewButton("Inc/Dec").Go("/inc-dec"),
+				).Row(
+					tg.NewButton("Mutate messages").Go("/mutate-messages"),
+				).Row(
+					tg.NewButton("Send location").Go("/send-location"),
+				).Reply().Widget(
+					"Choose the point of your interest",
+				),
+
+		}
+	)
 
 	tg.NewNode(
 		"mutate-messages", tg.NewPage().WithReply(
@@ -215,6 +224,32 @@ WithInitFunc(func(c *tg.Context) {
 		ActionFunc(func(c *tg.Context) {
 			bd := c.Bot.Data.(*BotData)
 			c.Sendf("My name is %q", bd.Name)
+		}),
+	tg.NewCommand("dynamic").
+		Desc("check of the dynamic work").
+		WidgetFunc(func(c *tg.Context){
+			nRow, nBtn := rand.Int()%10, rand.Int()%5
+			rows := []tg.ButtonRow{}
+			for i:=0 ; i<nRow ; i++ {
+				row := []*tg.Button{}
+				for j:=0 ; j<nBtn ; j++ {
+					row = append(row, tg.NewButton(
+						strconv.Itoa(i) + " " + strconv.Itoa(j),
+					))
+				}
+				rows = append(rows, row)
+			}
+			kbd := tg.NewKeyboard(rows...).ActionFunc(func(c *tg.Context){
+				c.Sendf(u.)
+			})Inline().Widget("sample text")
+			c.Send(kbd)
+			kbdChn := c.RunWidget(kbd)
+			for u := range c.Input() {
+				if kbd.Filter(u, nil) {
+					continue
+				}
+				kbdChn.Send(u)
+			}
 		}),
 )
 

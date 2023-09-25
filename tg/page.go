@@ -3,9 +3,7 @@ package tg
 import (
 	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
-
-// The basic widget to provide keyboard functionality
-// without implementing much.
+/*
 type Page struct {
 	Action Action
 	Text string
@@ -129,5 +127,5 @@ func (p *Page) Serve(c *Context) {
 		}
 	}
 }
-
+*/
 

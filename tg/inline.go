@@ -32,15 +32,15 @@ func (kbd *Inline) ToApi() tgbotapi.InlineKeyboardMarkup {
 }
 
 // The type implements message with an inline keyboard.
-type InlineWidget struct {
+type InlineCompo struct {
+	Compo
 	Text string
 	*Inline
 }
 
 // Implementing the Sendable interface.
 func (widget *InlineWidget) SendConfig(
-	sid SessionId,
-	bot *Bot,
+	c *Context,
 ) (*SendConfig) {
 	var text string
 	if widget.Text != "" {
@@ -49,7 +49,8 @@ func (widget *InlineWidget) SendConfig(
 		text = ">"
 	}
 
-	msgConfig := tgbotapi.NewMessage(sid.ToApi(), text)
+	sid := c.Session.Id.ToApi()
+	msgConfig := tgbotapi.NewMessage(sid, text)
 	msgConfig.ReplyMarkup = widget.ToApi()
 
 	ret := &SendConfig{}
@@ -58,7 +59,7 @@ func (widget *InlineWidget) SendConfig(
 }
 
 // Implementing the Widget interface.
-func (widget *InlineWidget) Serve(c *Context) {
+func (widget *InlineCompo) Serve(c *Context) {
 	for u := range c.Input() {
 		var act Action
 		if u.CallbackQuery == nil {
@@ -90,20 +91,13 @@ func (widget *InlineWidget) Serve(c *Context) {
 	}
 }
 
-func (widget *InlineWidget) Filter(
-	u *Update,
-	msgs MessageMap,
-) bool {
+func (compo *InlineCompo) Filter(u *Update) bool {
 	if widget == nil || u.CallbackQuery == nil {
 		return true
 	}
 
-	inlineMsg, inlineOk := msgs[""]
-	if !inlineOk {
-		return true
-	}
 	if u.CallbackQuery.Message.MessageID != 
-			inlineMsg.MessageID {
+			compo.Message.MessageID {
 		return true
 	}
 

@@ -7,6 +7,15 @@ import (
 	//"path"
 )
 
+// General type function for faster typing.
+type Func func(*Context)
+func (f Func) Act(c *Context) {
+	f(c)
+}
+func (f Func) Serve(c *Context) {
+	f(c)
+}
+
 // The way to determine where the context is
 // related to.
 type ContextScope uint8
@@ -185,7 +194,7 @@ func (c *Context) PathExist(pth Path) bool {
 }
 
 // Run widget in background returning the new input channel for it.
-func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
+func (c *Context) runWidget(widget Widget, args ...any) {
 	if widget == nil {
 		return nil
 	}
@@ -197,19 +206,32 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 		arg = args
 	}
 
-	updates := NewUpdateChan()
-	go func() {
-		widget.Serve(
-			c.Copy().
-				WithInput(updates).
-				WithArg(arg),
-		)
-		// To let widgets finish themselves before
-		// the channel is closed.
-		updates.Close()
-	}()
+	uis := widget.UI()
+	chns := make(map[UI] *UpdateChan)
+	for _, ui := range uis {
+		msg := c.Send(ui.Render(c))
+		ui.SetMessage(msg)
+		updates := NewUpdateChan()
+		go func() {
+			ui.Serve(
+				c.Copy().
+					WithInput(updates).
+					WithArg(arg),
+			)
+			// To let widgets finish themselves before
+			// the channel is closed.
+			updates.Close()
+		}()
+		chns[ui] = updates
+	}
 
-	return updates
+	for u := range c.skippedUpdates.Chan() {
+		for ui := range uis {
+			if !ui.Filter() {
+				chns[ui] <- u
+			}
+		}
+	}
 }
 
 // Simple way to read strings for widgets.
