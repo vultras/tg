@@ -5,6 +5,15 @@ import (
 	//"fmt"
 )
 
+type Maker[V any] interface {
+	Make(*Context) V
+}
+
+type MakeFunc[V any] func(*Context) V
+func (fn MakeFunc[V]) Make(c *Context) V {
+	return fn(c)
+}
+
 type ArgMap = map[string] any
 type ArgSlice = []any
 type ArgList[V any] []V
@@ -18,6 +27,10 @@ type Widget interface {
 	// Mostly made by looping over the
 	// updates range.
 	Serve(*Context)
+}
+
+type DynamicWidget[W Widget] interface {
+	Maker[W]
 }
 
 // Implementing the interface provides ability to

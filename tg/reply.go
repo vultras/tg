@@ -141,7 +141,4 @@ func (widget *ReplyWidget) Serve(c *Context) {
 	}
 }
 
-type DynamicReplyWidget struct {
-	
-}
 
