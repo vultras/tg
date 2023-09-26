@@ -40,7 +40,7 @@ func (c *Command) WithWidget(w Widget) *Command {
 	return c
 }
 
-func (c *Command) WidgetFunc(fn WidgetFunc) *Command {
+func (c *Command) WidgetFunc(fn Func) *Command {
 	return c.WithWidget(fn)
 }
 
@@ -195,7 +195,7 @@ func (widget *CommandWidget) Serve(c *Context) {
 			c.Run(cmd.Action, u)
 			if cmd.Widget != nil {
 				cmdUpdates.Close()
-				cmdUpdates = c.RunWidget(cmd.Widget)
+				cmdUpdates = c.runWidget(cmd.Widget)
 			}
 			continue
 		}

@@ -1,5 +1,15 @@
 package tg
 
+// The way to determine where the context is
+// related to.
+type SessionScope uint8
+const (
+	NoSessionScope ContextScope = iota
+	PrivateSessionScope
+	GroupSessionScope
+	ChannelSessionScope
+)
+
 // Represents unique value to identify chats.
 // In fact is simply ID of the chat.
 type SessionId int64
@@ -14,6 +24,7 @@ func (si SessionId) ToApi() int64 {
 type Session struct {
 	// Id of the chat of the user.
 	Id SessionId
+	Scope SessionScope
 	// Custom value for each user.
 	Data  any
 }
@@ -30,8 +41,10 @@ func NewSession(id SessionId) *Session {
 type SessionMap map[SessionId]*Session
 
 // Add new empty session by it's ID.
-func (sm SessionMap) Add(sid SessionId) {
+func (sm SessionMap) Add(sid SessionId) *Session {
+	ret := NewSession(sid)
 	sm[sid] = NewSession(sid)
+	return ret
 }
 
 // Session information for a group.

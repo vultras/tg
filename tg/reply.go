@@ -51,8 +51,8 @@ func (kbd *Reply) ToApi() any {
 }
 
 // Transform the keyboard to widget with the specified text.
-func (kbd *Reply) Widget(text string) *ReplyWidget {
-	ret := &ReplyWidget{}
+func (kbd *Reply) Compo(text string) *ReplyCompo {
+	ret := &ReplyCompo{}
 	ret.Reply = kbd
 	ret.Text = text
 	return ret
@@ -112,7 +112,7 @@ func (compo *ReplyCompo) Filter(
 	return false
 }
 
-// Implementing the Widget interface.
+// Implementing the UI interface.
 func (compo *ReplyCompo) Serve(c *Context) {
 	for u := range c.Input() {
 		var btn *Button

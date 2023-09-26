@@ -25,9 +25,9 @@ type Bot struct {
 	groupBehaviour *GroupBehaviour
 	// Bot behaviour in channels.
 	channelBehaviour *ChannelBehaviour
+	contexts map[SessionId] *context
 	sessions         SessionMap
 	groupSessions    GroupSessionMap
-	
 }
 
 // Return the new bot with empty sessions and behaviour.
@@ -50,8 +50,13 @@ func (bot *Bot) Debug(debug bool) *Bot {
 // Send the Renderable to the specified session client side.
 // Can be used for both group and private sessions.
 func (bot *Bot) Send(
-	sid SessionId, v Renderable,
+	sid SessionId, v Sendable,
 ) (*Message, error) {
+	c, ok := bot.contexts[sid]
+	if !ok {
+		return nil, ContextNotExistErr
+	}
+
 	config  := v.Render(sid, bot)
 	if config.Error != nil {
 		return nil, config.Error
@@ -64,7 +69,7 @@ func (bot *Bot) Send(
 	return &msg, nil
 }
 
-func (bot *Bot) Render(
+/*func (bot *Bot) Render(
 	sid SessionId, r Renderable,
 ) (MessageMap, error) {
 	configs := r.Render(sid, bot)
@@ -84,7 +89,7 @@ func (bot *Bot) Render(
 		messages[config.Name] = &msg
 	}
 	return messages, nil
-}
+}*/
 
 func (bot *Bot) GetSession(
 	sid SessionId,
@@ -210,57 +215,40 @@ func (bot *Bot) Run() error {
 // The function handles updates supposed for the private
 // chat with the bot.
 func (bot *Bot) handlePrivate(updates chan *Update) {
-	chans := make(map[SessionId] *UpdateChan )
 	var sid SessionId
 	for u := range updates {
 		sid = SessionId(u.FromChat().ID)
-		// Create new session if the one does not exist
-		// for this user.
-
-		// Making the bot ignore anything except "start"
-		// before the session started
-		session, sessionOk := bot.sessions[sid]
-		chn, chnOk := chans[sid]
-		if sessionOk {
-			// Creating new goroutine for 
-			// the session that exists
-			// but has none.
-			if !chnOk {
-				ctx := &context{
-					Bot:     bot,
-					Session: session,
-				}
-				chn := NewUpdateChan()
-				chans[sid] = chn
-				go (&Context{
-					context: ctx,
-					Update: u,
-					input: chn,
-				}).serve()
-			}
-		} else if u.Message != nil {
-			// Create session on any message
+		ctx, ctxOk := bot.contexts[sid]
+		 if u.Message != nil && !ctxOk {
+			// Create context on any message
 			// if we have no one.
-			bot.sessions.Add(sid)
-			lsession := bot.sessions[sid]
-			ctx := &context{
-				Bot:     bot,
-				Session: lsession,
+			session, sessionOk := bot.sessions[sid]
+			if !sessionOk {
+				// Creating session if we have none.
+				session = bot.sessions.Add(sid)
 			}
-			chn := NewUpdateChan()
-			chans[sid] = chn
+			session = bot.sessions[sid]
+			ctx = &context{
+				Bot:     bot,
+				Session: session,
+				scope: PrivateContextScope,
+				updates: NewUpdateChan(),
+			}
+			 if !ctxOk {
+				 bot.contexts[sid] = ctx
+			 }
+
 			go (&Context{
 				context: ctx,
 				Update: u,
-				input: chn,
+				input: ctx.updates,
 			}).serve()
+			ctx.updates.Send(u)
+			continue
 		}
 
-		chn, ok := chans[sid]
-		// The bot MUST get the "start" command.
-		// It will do nothing otherwise.
-		if ok {
-			chn.Send(u)
+		if ctxOk {
+			ctx.updates.Send(u)
 		}
 	}
 }

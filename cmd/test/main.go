@@ -103,34 +103,32 @@ WithInitFunc(func(c *tg.Context) {
 	c.Session.Data = &SessionData{}
 }).WithRootNode(tg.NewRootNode(
 	// The "/" widget.
-	tg.WidgetFunc(func(c *tg.Context) tg.UIs {
-		return tg.UIs{
+	tg.WidgetFunc(func(c *tg.Context) tg.UIs {return tg.UIs{
 
-			tg.NewKeyboard().Row(
-					tg.NewButton("GoT Github page").
-						WithUrl("https://github.com/mojosa-software/got"),
-				).Inline().Widget(
-					fmt.Sprintf(
-						"Hello, %s"
-						"The testing bot started!\n",
-						"You can see the basics of usage in the ",
-						"cmd/test/main.go file!",
-						c.SentFrom().UserName,
-					),
+		tg.NewKeyboard().Row(
+				tg.NewButton("GoT Github page").
+					WithUrl("https://github.com/mojosa-software/got"),
+			).Inline().Widget(
+				fmt.Sprintf(
+					"Hello, %s!\n"
+					"The testing bot started!\n",
+					"You can see the basics of usage in the ",
+					"cmd/test/main.go file!",
+					c.SentFrom().UserName,
 				),
+			),
 
-			tg.NewKeyboard().Row(
-					tg.NewButton("Inc/Dec").Go("/inc-dec"),
-				).Row(
-					tg.NewButton("Mutate messages").Go("/mutate-messages"),
-				).Row(
-					tg.NewButton("Send location").Go("/send-location"),
-				).Reply().Widget(
-					"Choose the point of your interest",
-				),
+		tg.NewKeyboard().Row(
+				tg.NewButton("Inc/Dec").Go("/inc-dec"),
+			).Row(
+				tg.NewButton("Mutate messages").Go("/mutate-messages"),
+			).Row(
+				tg.NewButton("Send location").Go("/send-location"),
+			).Reply().Widget(
+				"Choose the point of your interest",
+			),
 
-		}
-	)
+	}}),
 
 	tg.NewNode(
 		"mutate-messages", tg.NewPage().WithReply(

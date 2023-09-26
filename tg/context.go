@@ -7,7 +7,8 @@ import (
 	//"path"
 )
 
-// General type function for faster typing.
+// General type function to define actions, single component widgets
+// and components themselves.
 type Func func(*Context)
 func (f Func) Act(c *Context) {
 	f(c)
@@ -15,16 +16,14 @@ func (f Func) Act(c *Context) {
 func (f Func) Serve(c *Context) {
 	f(c)
 }
-
-// The way to determine where the context is
-// related to.
-type ContextScope uint8
-const (
-	NoContextScope ContextScope = iota
-	PrivateContextScope
-	GroupContextScope
-	ChannelContextScope
-)
+func(f Func) Filter(_ *Context) bool {
+	return false
+}
+func (f Func) Render(_ *Context) UI {
+	return UI{
+		f,
+	}
+}
 
 type ContextType uint8
 const (
@@ -40,6 +39,8 @@ type context struct {
 	Session *Session
 	// To reach the bot abilities inside callbacks.
 	Bot     *Bot
+	Type ContextType
+	updates *UpdateChan
 	skippedUpdates *UpdateChan
 	// Current screen ID.
 	path, prevPath Path
@@ -48,9 +49,7 @@ type context struct {
 // Goroutie function to handle each user.
 func (c *Context) serve() {
 	beh := c.Bot.behaviour
-	if beh.Init != nil {
-		c.Run(beh.Init, c.Update)
-	}
+	c.Run(beh.Init)
 	beh.Root.Serve(c)
 }
 
@@ -67,7 +66,7 @@ func (c *Context) PrevPath() Path {
 	return c.prevPath
 }
 
-func (c *Context) Run(a Action, u *Update) {
+func (c *Context) Run(a Action) {
 	if a != nil {
 		a.Act(c.Copy().WithUpdate(u))
 	}
@@ -78,12 +77,6 @@ func (c *Context) Run(a Action, u *Update) {
 // the underlying widget.
 func (c *Context) Skip(u *Update) {
 	c.skippedUpdates.Send(u)
-}
-
-// Renders the Renedrable object to the side of client
-// and returns the messages it sent.
-func (c *Context) Render(v Renderable) (MessageMap, error) {
-	return c.Bot.Render(c.Session.Id, v)
 }
 
 // Sends to the Sendable object.
@@ -134,16 +127,19 @@ func (c *Context) Copy() *Context {
 }
 
 func (c *Context) WithArg(v any) *Context {
+	c = c.Copy()
 	c.Arg = v
 	return c
 }
 
 func (c *Context) WithUpdate(u *Update) *Context {
+	c = c.Copy()
 	c.Update = u
 	return c
 }
 
 func (c *Context) WithInput(input *UpdateChan) *Context {
+	c = c.Copy()
 	c.input = input
 	return c
 }
@@ -159,9 +155,6 @@ type ActionFunc func(*Context)
 func (af ActionFunc) Act(c *Context) {
 	af(c)
 }
-
-
-type C = Context
 
 // Changes screen of user to the Id one.
 func (c *Context) Go(pth Path, args ...any) error {
@@ -194,7 +187,7 @@ func (c *Context) PathExist(pth Path) bool {
 }
 
 // Run widget in background returning the new input channel for it.
-func (c *Context) runWidget(widget Widget, args ...any) {
+func (c *Context) runWidget(widget Widget, args ...any) *UpdateChan {
 	if widget == nil {
 		return nil
 	}
@@ -206,11 +199,19 @@ func (c *Context) runWidget(widget Widget, args ...any) {
 		arg = args
 	}
 
+	pth := c.Path()
 	uis := widget.UI()
+	// Leave if changed path.
+	if pth != c.Path() {
+		return nil
+	}
 	chns := make(map[UI] *UpdateChan)
 	for _, ui := range uis {
-		msg := c.Send(ui.Render(c))
-		ui.SetMessage(msg)
+		s, ok := ui.(Sendable)
+		if ok {
+			msg := c.Send(s.SendConfig(c))
+			ui.SetMessage(msg)
+		}
 		updates := NewUpdateChan()
 		go func() {
 			ui.Serve(
@@ -219,19 +220,28 @@ func (c *Context) runWidget(widget Widget, args ...any) {
 					WithArg(arg),
 			)
 			// To let widgets finish themselves before
-			// the channel is closed.
+			// the channel is closed and close it by themselves.
 			updates.Close()
 		}()
 		chns[ui] = updates
 	}
 
-	for u := range c.skippedUpdates.Chan() {
-		for ui := range uis {
-			if !ui.Filter() {
-				chns[ui] <- u
+	ret := NewUpdateChan()
+	go func() {
+		for u := range ret {
+			for ui := range uis {
+				if !ui.Filter() {
+					chns[ui] <- u
+				}
 			}
 		}
+		ret.Close()
+		for _, chn := range chns {
+			chn.Close()
+		}
 	}
+
+	return ret
 }
 
 // Simple way to read strings for widgets.

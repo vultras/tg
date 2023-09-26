@@ -9,14 +9,6 @@ type Inline struct {
 	*Keyboard
 }
 
-// Transform the keyboard to widget with the specified text.
-func (kbd *Inline) Widget(text string) *InlineWidget {
-	ret := &InlineWidget{}
-	ret.Inline = kbd
-	ret.Text = text
-	return ret
-}
-
 // Convert the inline keyboard to markup for the tgbotapi.
 func (kbd *Inline) ToApi() tgbotapi.InlineKeyboardMarkup {
 	rows := [][]tgbotapi.InlineKeyboardButton{}
@@ -31,6 +23,14 @@ func (kbd *Inline) ToApi() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
+// Transform the keyboard to widget with the specified text.
+func (kbd *Inline) Compo(text string) *InlineCompo {
+	ret := &InlinCompo{}
+	ret.Inline = kbd
+	ret.Text = text
+	return ret
+}
+
 // The type implements message with an inline keyboard.
 type InlineCompo struct {
 	Compo
@@ -39,7 +39,7 @@ type InlineCompo struct {
 }
 
 // Implementing the Sendable interface.
-func (widget *InlineWidget) SendConfig(
+func (widget *InlineCompo) SendConfig(
 	c *Context,
 ) (*SendConfig) {
 	var text string
@@ -58,7 +58,7 @@ func (widget *InlineWidget) SendConfig(
 	return ret
 }
 
-// Implementing the Widget interface.
+// Implementing the Server interface.
 func (widget *InlineCompo) Serve(c *Context) {
 	for u := range c.Input() {
 		var act Action
@@ -91,6 +91,7 @@ func (widget *InlineCompo) Serve(c *Context) {
 	}
 }
 
+// Implementing the Filterer interface.
 func (compo *InlineCompo) Filter(u *Update) bool {
 	if widget == nil || u.CallbackQuery == nil {
 		return true

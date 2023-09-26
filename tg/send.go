@@ -9,8 +9,10 @@ type MessageId int64
 // Implementing the interface provides
 // way to define what message will be
 // sent to the side of a user.
-type Renderable interface {
-	Render(*Context) (*SendConfig)
+type Sendable interface {
+	SendConfig(*Context) (*SendConfig)
+	SetMessage(*Message)
+	GetMessage() *Message
 }
 
 type Errorer interface {
