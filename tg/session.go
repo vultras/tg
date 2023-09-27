@@ -4,7 +4,7 @@ package tg
 // related to.
 type SessionScope uint8
 const (
-	NoSessionScope ContextScope = iota
+	NoSessionScope SessionScope = iota
 	PrivateSessionScope
 	GroupSessionScope
 	ChannelSessionScope
@@ -30,9 +30,10 @@ type Session struct {
 }
 
 // Return new empty session with specified user ID.
-func NewSession(id SessionId) *Session {
+func NewSession(id SessionId, scope SessionScope) *Session {
 	return &Session{
 		Id: id,
+		Scope: scope,
 	}
 }
 
@@ -41,9 +42,9 @@ func NewSession(id SessionId) *Session {
 type SessionMap map[SessionId]*Session
 
 // Add new empty session by it's ID.
-func (sm SessionMap) Add(sid SessionId) *Session {
-	ret := NewSession(sid)
-	sm[sid] = NewSession(sid)
+func (sm SessionMap) Add(sid SessionId, scope SessionScope) *Session {
+	ret := NewSession(sid, scope)
+	sm[sid] = ret
 	return ret
 }
 

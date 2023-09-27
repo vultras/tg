@@ -7,8 +7,8 @@ import (
 	"fmt"
 
 	"github.com/mojosa-software/got/tg"
-	"math/rand"
-	"strconv"
+	//"math/rand"
+	//"strconv"
 )
 
 type BotData struct {
@@ -20,17 +20,19 @@ type SessionData struct {
 }
 
 type MutateMessageWidget struct {
+	*tg.Compo
 	Mutate func(string) string
 }
 
 func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
 	ret := &MutateMessageWidget{}
+	ret.Compo = tg.NewCompo()
 	ret.Mutate = fn
 	return ret
 }
 
 func (w *MutateMessageWidget) Serve(c *tg.Context) {
-	args, ok := c.Arg.(tg.ArgSlice)
+	args, ok := c.Arg.([]any)
 	if ok {
 		for _, arg := range args {
 			c.Sendf("%v", arg)
@@ -42,7 +44,7 @@ func (w *MutateMessageWidget) Serve(c *tg.Context) {
 	}
 }
 
-func (w *MutateMessageWidget) Filter(u *tg.Update, _ tg.MessageMap) bool {
+func (w *MutateMessageWidget) Filter(u *tg.Update) bool {
 	if u.Message == nil {
 		return true
 	}
@@ -75,8 +77,6 @@ var (
 		backButton,
 	)
 
-	navKeyboard = 
-
 	sendLocationKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("Send location").
 			WithSendLocation(true).
@@ -103,17 +103,19 @@ WithInitFunc(func(c *tg.Context) {
 	c.Session.Data = &SessionData{}
 }).WithRootNode(tg.NewRootNode(
 	// The "/" widget.
-	tg.WidgetFunc(func(c *tg.Context) tg.UIs {return tg.UIs{
+	tg.RenderFunc(func(c *tg.Context) tg.UI {return tg.UI {
 
 		tg.NewKeyboard().Row(
 				tg.NewButton("GoT Github page").
 					WithUrl("https://github.com/mojosa-software/got"),
-			).Inline().Widget(
+			).Inline().Compo(
 				fmt.Sprintf(
-					"Hello, %s!\n"
-					"The testing bot started!\n",
-					"You can see the basics of usage in the ",
-					"cmd/test/main.go file!",
+					fmt.Sprint(
+						"Hello, %s!\n",
+						"The testing bot started!\n",
+						"You can see the basics of usage in the ",
+						"cmd/test/main.go file!",
+					),
 					c.SentFrom().UserName,
 				),
 			),
@@ -124,72 +126,84 @@ WithInitFunc(func(c *tg.Context) {
 				tg.NewButton("Mutate messages").Go("/mutate-messages"),
 			).Row(
 				tg.NewButton("Send location").Go("/send-location"),
-			).Reply().Widget(
+			).Reply().Compo(
 				"Choose the point of your interest",
 			),
 
 	}}),
 
 	tg.NewNode(
-		"mutate-messages", tg.NewPage().WithReply(
-			tg.NewKeyboard().Row(
-				tg.NewButton("Upper case").Go("upper-case"),
-				tg.NewButton("Lower case").Go("lower-case"),
-			).Row(
-				backButton,
-			).Reply().Widget(
-				"Choose the function to mutate string",
-			),
-		),
+		"mutate-messages", tg.RenderFunc(func(c *tg.Context) tg.UI {
+			return tg.UI{
+				tg.NewKeyboard().Row(
+					tg.NewButton("Upper case").Go("upper-case"),
+					tg.NewButton("Lower case").Go("lower-case"),
+				).Row(
+					backButton,
+				).Reply().Compo(
+					"Choose the function to mutate string",
+				),
+			}
+		}),
 		tg.NewNode(
-			"upper-case", tg.NewPage().WithReply(
-				backKeyboard.Reply().
-					Widget(
-						"Type a string and the bot will convert it to upper case",
-					),
-			).WithSub(
-				NewMutateMessageWidget(strings.ToUpper),
-			),
-		),
-		tg.NewNode(
-			"lower-case", tg.NewPage().WithReply(
-				backKeyboard.Reply().
-					Widget(
-						"Type a string and the bot will convert it to lower case",
-					),
-			).WithSub(
-				NewMutateMessageWidget(strings.ToLower),
-			),
-		),
-	),
-
-	tg.NewNode(
-		"inc-dec", tg.NewPage().WithReply(
-				incDecKeyboard.Reply().Widget("Press the buttons to increment and decrement"),
-			).ActionFunc(func(c *tg.Context) {
-				// The function will be calleb before serving page.
-				d := ExtractSessionData(c)
-				c.Sendf("Current counter value = %d", d.Counter)
+			"upper-case", tg.RenderFunc(func(c *tg.Context) tg.UI {
+				return tg.UI{
+					backKeyboard.Reply().Compo(
+							"Type a string and the bot will convert it to upper case",
+						),
+					NewMutateMessageWidget(strings.ToUpper),
+				}
 			}),
+		),
+		tg.NewNode(
+			"lower-case", tg.RenderFunc(func(c *tg.Context) tg.UI {
+				return tg.UI{
+					backKeyboard.Reply().
+						Compo(
+							"Type a string and the bot will convert it to lower case",
+						),
+					NewMutateMessageWidget(strings.ToLower),
+				}
+			}),
+		),
 	),
 
 	tg.NewNode(
-		"send-location", tg.NewPage().WithReply(
-			sendLocationKeyboard.Widget("Press the button to send your location!"),
-		).WithInline(
-			tg.NewKeyboard().Row(
-				tg.NewButton(
-					"Check",
-				).WithData(
-					"check",
-				).ActionFunc(func(c *tg.Context) {
-					d := ExtractSessionData(c)
-					c.Sendf("Counter = %d", d.Counter)
-				}),
-			).Inline().Widget("Press the button to display your counter"),
-		),
+		"inc-dec", tg.RenderFunc(func(c *tg.Context) tg.UI {
+			d := ExtractSessionData(c)
+			return tg.UI{
+				incDecKeyboard.Reply().Compo(fmt.Sprintf(
+					"Press the buttons to increment and decrement.\n" +
+					"Current counter value = %d", d.Counter,
+				)),
+			}
+		}),
 	),
-)).WithCommands(
+
+	tg.NewNode(
+		"send-location", tg.RenderFunc(func(c *tg.Context) tg.UI {
+			return tg.UI {
+				tg.NewKeyboard().Row(
+					tg.NewButton(
+						"Check",
+					).WithData(
+						"check",
+					).WithAction(tg.Func(func(c *tg.Context) {
+						d := ExtractSessionData(c)
+						c.Sendf("Counter = %d", d.Counter)
+					})),
+				).Inline().Compo("Press the button to display your counter"),
+
+				sendLocationKeyboard.Compo(
+					"Press the button to send your location!",
+				),
+			}
+		}),
+	),
+)).WithRoot(tg.NewCommandCompo().
+WithPreStart(tg.Func(func(c *tg.Context){
+	c.Sendf("Please, use /start ")
+})).WithCommands(
 	tg.NewCommand("info").
 		ActionFunc(func(c *tg.Context){
 			c.SendfHTML(`<a href="https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg">cock</a><strong>cock</strong> die`)
@@ -219,37 +233,15 @@ WithInitFunc(func(c *tg.Context) {
 		}),
 	tg.NewCommand("botname").
 		Desc("get the bot name").
-		ActionFunc(func(c *tg.Context) {
+		WithAction(tg.Func(func(c *tg.Context) {
 			bd := c.Bot.Data.(*BotData)
 			c.Sendf("My name is %q", bd.Name)
-		}),
+		})),
 	tg.NewCommand("dynamic").
 		Desc("check of the dynamic work").
-		WidgetFunc(func(c *tg.Context){
-			nRow, nBtn := rand.Int()%10, rand.Int()%5
-			rows := []tg.ButtonRow{}
-			for i:=0 ; i<nRow ; i++ {
-				row := []*tg.Button{}
-				for j:=0 ; j<nBtn ; j++ {
-					row = append(row, tg.NewButton(
-						strconv.Itoa(i) + " " + strconv.Itoa(j),
-					))
-				}
-				rows = append(rows, row)
-			}
-			kbd := tg.NewKeyboard(rows...).ActionFunc(func(c *tg.Context){
-				c.Sendf(u.)
-			})Inline().Widget("sample text")
-			c.Send(kbd)
-			kbdChn := c.RunWidget(kbd)
-			for u := range c.Input() {
-				if kbd.Filter(u, nil) {
-					continue
-				}
-				kbdChn.Send(u)
-			}
-		}),
-)
+		WithWidget(tg.Func(func(c *tg.Context){
+		})),
+	))
 
 var gBeh = tg.NewGroupBehaviour().
 	InitFunc(func(c *tg.GC) {

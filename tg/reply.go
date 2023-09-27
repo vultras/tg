@@ -55,17 +55,19 @@ func (kbd *Reply) Compo(text string) *ReplyCompo {
 	ret := &ReplyCompo{}
 	ret.Reply = kbd
 	ret.Text = text
+	ret.Compo = NewCompo()
 	return ret
 }
 
 // The type implements reply keyboard widget.
 type ReplyCompo struct {
+	*Compo
 	Text string
 	*Reply
 }
 
 // Implementing the sendable interface.
-func (compo *ReplyCompo) Render(
+func (compo *ReplyCompo) SendConfig(
 	c *Context,
 ) (*SendConfig) {
 	sid := c.Session.Id.ToApi()
@@ -98,10 +100,10 @@ func (compo *ReplyCompo) Filter(
 		return true
 	}
 
-	_, ok := widget.ButtonMap()[u.Message.Text]
+	_, ok := compo.ButtonMap()[u.Message.Text]
 	if !ok {
 		if u.Message.Location != nil {
-			locBtn := widget.ButtonMap().LocationButton()
+			locBtn := compo.ButtonMap().LocationButton()
 			if locBtn == nil {
 				return true
 			}
@@ -117,7 +119,7 @@ func (compo *ReplyCompo) Serve(c *Context) {
 	for u := range c.Input() {
 		var btn *Button
 		text := u.Message.Text
-		btns := widget.ButtonMap()
+		btns := compo.ButtonMap()
 
 		btn, ok := btns[text]
 		if !ok {
@@ -127,7 +129,7 @@ func (compo *ReplyCompo) Serve(c *Context) {
 		}
 
 		if btn != nil {
-			c.Run(btn.Action, u)
+			c.WithUpdate(u).Run(btn.Action)
 		}
 	}
 }

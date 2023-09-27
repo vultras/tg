@@ -25,15 +25,16 @@ func (kbd *Inline) ToApi() tgbotapi.InlineKeyboardMarkup {
 
 // Transform the keyboard to widget with the specified text.
 func (kbd *Inline) Compo(text string) *InlineCompo {
-	ret := &InlinCompo{}
+	ret := &InlineCompo{}
 	ret.Inline = kbd
 	ret.Text = text
+	ret.Compo = NewCompo()
 	return ret
 }
 
 // The type implements message with an inline keyboard.
 type InlineCompo struct {
-	Compo
+	*Compo
 	Text string
 	*Inline
 }
@@ -87,13 +88,13 @@ func (widget *InlineCompo) Serve(c *Context) {
 		} else if widget.Action != nil {
 			act = widget.Action
 		}
-		c.Run(act, u)
+		c.WithUpdate(u).Run(act)
 	}
 }
 
 // Implementing the Filterer interface.
 func (compo *InlineCompo) Filter(u *Update) bool {
-	if widget == nil || u.CallbackQuery == nil {
+	if compo == nil || u.CallbackQuery == nil {
 		return true
 	}
 

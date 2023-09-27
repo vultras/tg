@@ -23,15 +23,18 @@ var (
 )
 
 type File struct {
+	*Compo
 	path    string
 	typ     FileType
 	caption string
 }
 
 func NewFile(path string) *File {
-	return &File{
+	ret := &File{
 		path: path,
 	}
+	ret.Compo = NewCompo()
+	return ret
 }
 
 func (f *File) withType(typ FileType) *File {
@@ -73,14 +76,14 @@ func (f *File) SendData() string {
 	return ""
 }
 func (f *File) SendConfig(
-	sid SessionId, bot *Bot,
+	c *Context,
 ) (*SendConfig) {
 	var config SendConfig
-	cid := sid.ToApi()
+	sid := c.Session.Id.ToApi()
 
 	switch f.Type() {
 	case ImageFileType:
-		photo := tgbotapi.NewPhoto(cid, f)
+		photo := tgbotapi.NewPhoto(sid, f)
 		photo.Caption = f.caption
 
 		config.Image = &photo

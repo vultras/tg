@@ -9,7 +9,7 @@ type Widget interface {
 
 // The way to describe custom function based Widgets.
 type RenderFunc func(c *Context) UI
-func (fn RenderFunc) Uis(c *Context) UI {
+func (fn RenderFunc) Render(c *Context) UI {
 	return fn(c)
 }
 
@@ -30,15 +30,18 @@ type Component interface {
 }
 
 // The type to embed into potential components.
-// Implements empty versions of interfaces
-// and contains 
+// Implements empty versions of interfaces.
 type Compo struct{
 	*Message
 }
 
+func NewCompo() *Compo {
+	return &Compo{}
+}
+
 // Defalut setting message 
-func (compo Compo) SetMessage(msg *Message) { compo.Message = msg }
-func (compo Compo) GetMessage() *Message { return compo.Message }
+func (compo *Compo) SetMessage(msg *Message) { compo.Message = msg }
+func (compo *Compo) GetMessage() *Message { return compo.Message }
 // Default non filtering filter. Always returns false.
-func (compo Compo) Filter(_ *Update, _ *Message) bool {return false}
+func (compo *Compo) Filter(_ *Update) bool {return false}
 

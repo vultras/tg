@@ -10,9 +10,9 @@ type Filterer interface {
 	Filter(*Update) bool
 }
 
-type FilterFunc func(*Update, MessageMap) bool
+type FilterFunc func(*Update) bool
 func (f FilterFunc) Filter(
-	u *Update, msgs MessageMap,
+	u *Update,
 ) bool {
-	return f(u, msgs)
+	return f(u)
 }

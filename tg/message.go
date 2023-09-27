@@ -6,6 +6,7 @@ import (
 
 // Simple text message type.
 type MessageConfig struct {
+	Compo
 	ParseMode string
 	Text string
 }
@@ -38,10 +39,10 @@ func (msg *MessageConfig) HTML() *MessageConfig {
 }
 
 func (config *MessageConfig) SendConfig(
-	sid SessionId, bot *Bot,
+	c *Context,
 ) (*SendConfig) {
 	var ret SendConfig
-	msg := tgbotapi.NewMessage(sid.ToApi(), config.Text)
+	msg := tgbotapi.NewMessage(c.Session.Id.ToApi(), config.Text)
 	ret.Message = &msg
 	ret.Message.ParseMode = config.ParseMode
 	return &ret

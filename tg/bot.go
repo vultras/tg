@@ -39,6 +39,7 @@ func NewBot(token string) (*Bot, error) {
 
 	return &Bot{
 		Api: bot,
+		contexts: make(map[SessionId] *context),
 	}, nil
 }
 
@@ -50,14 +51,18 @@ func (bot *Bot) Debug(debug bool) *Bot {
 // Send the Renderable to the specified session client side.
 // Can be used for both group and private sessions.
 func (bot *Bot) Send(
-	sid SessionId, v Sendable,
+	sid SessionId, v Sendable, args ...any,
 ) (*Message, error) {
-	c, ok := bot.contexts[sid]
+	ctx, ok := bot.contexts[sid]
 	if !ok {
 		return nil, ContextNotExistErr
 	}
 
-	config  := v.Render(sid, bot)
+	c := &Context{
+		context: ctx,
+	}
+
+	config := v.SendConfig(c.WithArg(c.MakeArg(args)))
 	if config.Error != nil {
 		return nil, config.Error
 	}
@@ -220,18 +225,19 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 		sid = SessionId(u.FromChat().ID)
 		ctx, ctxOk := bot.contexts[sid]
 		 if u.Message != nil && !ctxOk {
-			// Create context on any message
-			// if we have no one.
+
 			session, sessionOk := bot.sessions[sid]
 			if !sessionOk {
 				// Creating session if we have none.
-				session = bot.sessions.Add(sid)
+				session = bot.sessions.Add(sid, PrivateSessionScope)
 			}
 			session = bot.sessions[sid]
+
+			// Create context on any message
+			// if we have no one.
 			ctx = &context{
 				Bot:     bot,
 				Session: session,
-				scope: PrivateContextScope,
 				updates: NewUpdateChan(),
 			}
 			 if !ctxOk {

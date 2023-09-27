@@ -16,7 +16,7 @@ func (f Func) Act(c *Context) {
 func (f Func) Serve(c *Context) {
 	f(c)
 }
-func(f Func) Filter(_ *Context) bool {
+func(f Func) Filter(_ *Update) bool {
 	return false
 }
 func (f Func) Render(_ *Context) UI {
@@ -68,7 +68,7 @@ func (c *Context) PrevPath() Path {
 
 func (c *Context) Run(a Action) {
 	if a != nil {
-		a.Act(c.Copy().WithUpdate(u))
+		a.Act(c)
 	}
 }
 
@@ -186,52 +186,62 @@ func (c *Context) PathExist(pth Path) bool {
 	return c.Bot.behaviour.PathExist(pth)
 }
 
-// Run widget in background returning the new input channel for it.
-func (c *Context) runWidget(widget Widget, args ...any) *UpdateChan {
-	if widget == nil {
-		return nil
-	}
-
+func (c *Context) MakeArg(args []any) any {
 	var arg any
 	if len(args) == 1 {
 		arg = args[0]
 	} else if len(args) > 1 {
 		arg = args
 	}
+	return arg
+}
+
+func (c *Context) RunCompo(compo Component, args ...any) *UpdateChan {
+	s, ok := compo.(Sendable)
+	if ok {
+		msg, err := c.Send(s)
+		if err != nil {
+			panic("could not send the message")
+		}
+		s.SetMessage(msg)
+	}
+	updates := NewUpdateChan()
+	go func() {
+		compo.Serve(
+			c.WithInput(updates).
+				WithArg(c.MakeArg(args)),
+		)
+		// To let widgets finish themselves before
+		// the channel is closed and close it by themselves.
+		updates.Close()
+	}()
+	return updates
+}
+
+// Run widget in background returning the new input channel for it.
+func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
+	if widget == nil {
+		return nil
+	}
 
 	pth := c.Path()
-	uis := widget.UI()
+	compos := widget.Render(c.WithArg(c.MakeArg(args)))
 	// Leave if changed path.
 	if pth != c.Path() {
 		return nil
 	}
-	chns := make(map[UI] *UpdateChan)
-	for _, ui := range uis {
-		s, ok := ui.(Sendable)
-		if ok {
-			msg := c.Send(s.SendConfig(c))
-			ui.SetMessage(msg)
-		}
-		updates := NewUpdateChan()
-		go func() {
-			ui.Serve(
-				c.Copy().
-					WithInput(updates).
-					WithArg(arg),
-			)
-			// To let widgets finish themselves before
-			// the channel is closed and close it by themselves.
-			updates.Close()
-		}()
-		chns[ui] = updates
+	chns := make([]*UpdateChan, len(compos))
+	for i, compo := range compos {
+		chns[i] = c.RunCompo(compo)
 	}
 
 	ret := NewUpdateChan()
 	go func() {
-		for u := range ret {
-			for ui := range uis {
-				if !ui.Filter() {
-					chns[ui] <- u
+		for u := range ret.Chan() {
+			for i, compo := range compos {
+				chn := chns[i]
+				if !compo.Filter(u) {
+					chn.Send(u)
 				}
 			}
 		}
@@ -239,7 +249,7 @@ func (c *Context) runWidget(widget Widget, args ...any) *UpdateChan {
 		for _, chn := range chns {
 			chn.Close()
 		}
-	}
+	}()
 
 	return ret
 }

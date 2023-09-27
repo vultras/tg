@@ -100,21 +100,21 @@ func (c *GroupCommand) ToApi() tgbotapi.BotCommand {
 
 // The type is used to recognize commands and execute
 // its actions and widgets .
-type CommandWidget struct {
+type CommandCompo struct {
 	PreStart Action
 	Commands  CommandMap
 	Usage Action
 }
 
-// Returns new empty CommandWidget.
-func NewCommandWidget() *CommandWidget {
-	ret := &CommandWidget{}
+// Returns new empty CommandCompo.
+func NewCommandCompo() *CommandCompo {
+	ret := &CommandCompo{}
 	ret.Commands = make(CommandMap)
 	return ret
 }
 
 // Set the commands to handle.
-func (w *CommandWidget) WithCommands(cmds ...*Command) *CommandWidget {
+func (w *CommandCompo) WithCommands(cmds ...*Command) *CommandCompo {
 	for _, cmd := range cmds {
 		if cmd.Name == "" {
 			panic("empty command name")
@@ -129,41 +129,41 @@ func (w *CommandWidget) WithCommands(cmds ...*Command) *CommandWidget {
 }
 
 // Set the prestart action.
-func (w *CommandWidget) WithPreStart(a Action) *CommandWidget {
+func (w *CommandCompo) WithPreStart(a Action) *CommandCompo {
 	w.PreStart = a
 	return w
 }
 
 // Set the prestart action with function.
-func (w *CommandWidget) WithPreStartFunc(fn ActionFunc) *CommandWidget {
+func (w *CommandCompo) WithPreStartFunc(fn ActionFunc) *CommandCompo {
 	return w.WithPreStart(fn)
 }
 
 // Set the usage action.
-func (w *CommandWidget) WithUsage(a Action) *CommandWidget {
+func (w *CommandCompo) WithUsage(a Action) *CommandCompo {
 	w.Usage = a
 	return w
 }
 
 // Set the usage action with function.
-func (w *CommandWidget) WithUsageFunc(fn ActionFunc) *CommandWidget {
+func (w *CommandCompo) WithUsageFunc(fn ActionFunc) *CommandCompo {
 	return w.WithUsage(fn)
 }
 
-func (widget *CommandWidget) Filter(
+func (widget *CommandCompo) Filter(
 	u *Update,
-	msgs ...*Message,
 ) bool {
-	/*if u.Message == nil || !u.Message.IsCommand() {
+	if u.Message == nil || !u.Message.IsCommand() {
 		return false
-	}*/
+	}
 
 	return false
 }
 
-func (widget *CommandWidget) Serve(c *Context) {
+// Implementing server.
+func (compo *CommandCompo) Serve(c *Context) {
 	commanders := make(map[CommandName] BotCommander)
-	for k, v := range widget.Commands {
+	for k, v := range compo.Commands {
 		commanders[k] = v
 	}
 	c.Bot.SetCommands(
@@ -178,7 +178,7 @@ func (widget *CommandWidget) Serve(c *Context) {
 			// while we have the empty screen.
 			// E. g. the session did not start.
 			if !(u.Message.IsCommand() && u.Message.Command() == "start") {
-				c.Run(widget.PreStart, u)
+				c.WithUpdate(u).Run(compo.PreStart)
 				continue
 			}
 		}
@@ -186,16 +186,16 @@ func (widget *CommandWidget) Serve(c *Context) {
 		if u.Message != nil && u.Message.IsCommand() {
 			// Command handling.
 			cmdName := CommandName(u.Message.Command())
-			cmd, ok := widget.Commands[cmdName]
+			cmd, ok := compo.Commands[cmdName]
 			if !ok {
-				c.Run(widget.Usage, u)
+				c.WithUpdate(u).Run(compo.Usage)
 				continue
 			}
 
-			c.Run(cmd.Action, u)
+			c.WithUpdate(u).Run(cmd.Action)
 			if cmd.Widget != nil {
 				cmdUpdates.Close()
-				cmdUpdates = c.runWidget(cmd.Widget)
+				cmdUpdates = c.WithUpdate(u).RunWidget(cmd.Widget)
 			}
 			continue
 		}

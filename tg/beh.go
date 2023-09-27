@@ -5,7 +5,7 @@ package tg
 
 // The type describes behaviour for the bot in personal chats.
 type Behaviour struct {
-	Root Widget
+	Root Component
 	Init      Action
 	Screens   ScreenMap
 }
@@ -15,12 +15,6 @@ func NewBehaviour() *Behaviour {
 	return &Behaviour{
 		Screens: make(ScreenMap),
 	}
-}
-
-// Set the root widget. Mostly the CommandWidget is used.
-func (b *Behaviour) WithRoot(root Widget) *Behaviour {
-	b.Root = root
-	return b
 }
 
 // The Action will be called on session creation,
@@ -61,15 +55,8 @@ func (b *Behaviour) WithRootNode(node *RootNode) *Behaviour {
 
 // The function sets as the standard root widget CommandWidget
 // and its commands..
-func (b *Behaviour) WithCommands(cmds ...*Command) *Behaviour {
-	b.Root = NewCommandWidget().
-		WithCommands(cmds...).
-		WithPreStartFunc(func(c *Context){
-			c.Sendf("Please, use the /start command to start")
-		}).WithUsageFunc(func(c *Context){
-			c.Sendf("No such command")
-		})
-
+func (b *Behaviour) WithRoot(root Component) *Behaviour {
+	b.Root = root
 	return b
 }
 
