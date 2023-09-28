@@ -20,6 +20,7 @@ func (updates *UpdateChan) Chan() chan *Update {
 // Send an update to the channel.
 // Returns true if the update was sent.
 func (updates *UpdateChan) Send(u *Update) bool {
+	defer recover()
 	if updates == nil || updates.chn == nil {
 		return false
 	}
@@ -45,7 +46,8 @@ func (updates *UpdateChan) Close() {
 	if updates == nil || updates.chn == nil {
 		return
 	}
-	close(updates.chn)
+	chn := updates.chn
 	updates.chn = nil
+	close(chn)
 }
 
