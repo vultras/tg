@@ -60,21 +60,6 @@ var (
 		backButton,
 	)
 
-	incDecKeyboard = tg.NewKeyboard().Row(
-		tg.NewButton("+").ActionFunc(func(c *tg.Context) {
-			d := ExtractSessionData(c)
-			d.Counter++
-			c.Sendf("%d", d.Counter)
-		}),
-		tg.NewButton("-").ActionFunc(func(c *tg.Context) {
-			d := ExtractSessionData(c)
-			d.Counter--
-			c.Sendf("%d", d.Counter)
-		}),
-	).Row(
-		backButton,
-	)
-
 	sendLocationKeyboard = tg.NewKeyboard().Row(
 		tg.NewButton("Send location").
 			WithSendLocation(true).
@@ -101,32 +86,34 @@ WithInitFunc(func(c *tg.Context) {
 	c.Session.Data = &SessionData{}
 }).WithRootNode(tg.NewRootNode(
 	// The "/" widget.
-	tg.RenderFunc(func(c *tg.Context) tg.UI {return tg.UI {
-		tg.NewMessage(fmt.Sprintf(
-			fmt.Sprint(
-				"Hello, %s!\n",
-				"The testing bot started!\n",
-				"You can see the basics of usage in the ",
-				"cmd/test/main.go file!",
+	tg.RenderFunc(func(c *tg.Context) tg.UI {
+		return tg.UI {
+			tg.NewMessage(fmt.Sprintf(
+				fmt.Sprint(
+					"Hello, %s!\n",
+					"The testing bot started!\n",
+					"You can see the basics of usage in the ",
+					"cmd/test/main.go file!",
+				),
+				c.SentFrom().UserName,
+			)).Inline(
+				tg.NewKeyboard().Row(
+					tg.NewButton("GoT Github page").
+						WithUrl("https://github.com/mojosa-software/got"),
+				).Inline(),
 			),
-			c.SentFrom().UserName,
-		)).Inline(
-			tg.NewKeyboard().Row(
-				tg.NewButton("GoT Github page").
-					WithUrl("https://github.com/mojosa-software/got"),
-			).Inline(),
-		),
 
-		tg.NewMessage("Choose your interest").Reply(
-			tg.NewKeyboard().Row(
-					tg.NewButton("Inc/Dec").Go("/inc-dec"),
-				).Row(
-					tg.NewButton("Mutate messages").Go("/mutate-messages"),
-				).Row(
-					tg.NewButton("Send location").Go("/send-location"),
-				).Reply(),
-		),
-	}}),
+			tg.NewMessage("Choose your interest").Reply(
+				tg.NewKeyboard().Row(
+						tg.NewButton("Inc/Dec").Go("/inc-dec"),
+					).Row(
+						tg.NewButton("Mutate messages").Go("/mutate-messages"),
+					).Row(
+						tg.NewButton("Send location").Go("/send-location"),
+					).Reply(),
+			),
+		}
+	}),
 
 	tg.NewNode(
 		"mutate-messages", tg.RenderFunc(func(c *tg.Context) tg.UI {
@@ -171,13 +158,58 @@ WithInitFunc(func(c *tg.Context) {
 
 	tg.NewNode(
 		"inc-dec", tg.RenderFunc(func(c *tg.Context) tg.UI {
+			var (
+				kbd *tg.InlineCompo
+				inline, std, onlyInc, onlyDec *tg.Inline
+			)
+
+
 			d := ExtractSessionData(c)
+			format := "Press the buttons to increment and decrement.\n" +
+				"Current counter value = %d"
+
+			incBtn := tg.NewButton("+").ActionFunc(func(c *tg.Context) {
+					d.Counter++
+					kbd.Text = fmt.Sprintf(format, d.Counter)
+					if d.Counter == 5 {
+						kbd.Inline = onlyDec
+					} else {
+						kbd.Inline = std
+					}
+					kbd.Update(c)
+				})
+			decBtn := tg.NewButton("-").ActionFunc(func(c *tg.Context) {
+					d.Counter--
+					kbd.Text = fmt.Sprintf(format, d.Counter)
+					if d.Counter == -5 {
+						kbd.Inline = onlyInc
+					} else {
+						kbd.Inline = std
+					}
+					kbd.Update(c)
+					//c.Sendf("%d", d.Counter)
+				})
+
+			onlyInc = tg.NewKeyboard().Row(incBtn).Inline()
+			onlyDec = tg.NewKeyboard().Row(decBtn).Inline()
+			std = tg.NewKeyboard().Row(incBtn, decBtn).Inline()
+
+			if d.Counter == 5 {
+				inline = onlyDec
+			} else if d.Counter == -5 {
+				inline = onlyInc
+			} else {
+				inline = std
+			}
+
+			kbd = tg.NewMessage(
+				fmt.Sprintf(format, d.Counter),
+			).Inline(inline)
+
 			return tg.UI{
-				tg.NewMessage(fmt.Sprintf(
-					"Press the buttons to increment and decrement.\n" +
-					"Current counter value = %d", d.Counter,
-				)).Reply(
-					incDecKeyboard.Reply(),
+				kbd,
+				tg.NewMessage("").Reply(
+					backKeyboard.Reply(),
 				),
 			}
 		}),

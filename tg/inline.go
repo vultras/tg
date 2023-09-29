@@ -40,6 +40,16 @@ func (compo *InlineCompo) SendConfig(
 	return sendConfig
 }
 
+func (compo *InlineCompo) Update(c *Context) {
+	edit := tgbotapi.NewEditMessageTextAndMarkup(
+		c.Session.Id.ToApi(),
+		compo.Message.MessageID,
+		compo.Text,
+		compo.Inline.ToApi(),
+	)
+	c.Bot.Api.Send(edit)
+}
+
 // Implementing the Filterer interface.
 func (compo *InlineCompo) Filter(u *Update) bool {
 	if compo == nil || u.CallbackQuery == nil {
