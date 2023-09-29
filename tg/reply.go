@@ -50,19 +50,9 @@ func (kbd *Reply) ToApi() any {
 	return tgbotapi.NewReplyKeyboard(rows...)
 }
 
-// Transform the keyboard to widget with the specified text.
-func (kbd *Reply) Compo(text string) *ReplyCompo {
-	ret := &ReplyCompo{}
-	ret.Reply = kbd
-	ret.Text = text
-	ret.Compo = NewCompo()
-	return ret
-}
-
 // The type implements reply keyboard widget.
 type ReplyCompo struct {
-	*Compo
-	Text string
+	*MessageCompo
 	*Reply
 }
 
@@ -70,27 +60,9 @@ type ReplyCompo struct {
 func (compo *ReplyCompo) SendConfig(
 	c *Context,
 ) (*SendConfig) {
-	sid := c.Session.Id.ToApi()
-	if compo == nil {
-		msgConfig := tgbotapi.NewMessage(sid, ">")
-		msgConfig.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
-		return &SendConfig{
-			Message: &msgConfig,
-		}
-	}
-	var text string
-	if compo.Text != "" {
-		text = compo.Text
-	} else {
-		text = ">"
-	}
-
-	msgConfig := tgbotapi.NewMessage(sid, text)
-	msgConfig.ReplyMarkup = compo.ToApi()
-
-	ret := &SendConfig{}
-	ret.Message = &msgConfig
-	return ret
+	sendConfig := compo.MessageCompo.SendConfig(c)
+	sendConfig.Message.ReplyMarkup = compo.Reply.ToApi()
+	return sendConfig
 }
 
 func (compo *ReplyCompo) Filter(
@@ -133,5 +105,4 @@ func (compo *ReplyCompo) Serve(c *Context) {
 		}
 	}
 }
-
 

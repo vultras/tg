@@ -81,18 +81,30 @@ func (c *Context) Skip(u *Update) {
 
 // Sends to the Sendable object.
 func (c *Context) Send(v Sendable) (*Message, error) {
-	return c.Bot.Send(c.Session.Id, v)
+	config := v.SendConfig(c)
+	if config.Error != nil {
+		return nil, config.Error
+	}
+
+	msg, err := c.Bot.Api.Send(config.ToApi())
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
 }
 
-// Sends the formatted with fmt.Sprintf message to the user.
+// Sends the formatted with fmt.Sprintf message to the user
+// using default Markdown parsing format.
 func (c *Context) Sendf(format string, v ...any) (*Message, error) {
 	return c.Send(NewMessage(fmt.Sprintf(format, v...)))
 }
 
+// Same as Sendf but uses Markdown 2 format for parsing.
 func (c *Context) Sendf2(format string, v ...any) (*Message, error) {
 	return c.Send(NewMessage(fmt.Sprintf(format, v...)).MD2())
 }
 
+// Same as Sendf but uses HTML format for parsing.
 func (c *Context) SendfHTML(format string, v ...any) (*Message, error) {
 	return c.Send(NewMessage(fmt.Sprintf(format, v...)).HTML())
 }
@@ -227,7 +239,7 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 	pth := c.Path()
 	compos := widget.Render(c.WithArg(c.MakeArg(args)))
 	// Leave if changed path.
-	if pth != c.Path() {
+	if compos == nil || pth != c.Path() {
 		return nil
 	}
 	chns := make([]*UpdateChan, len(compos))
@@ -237,12 +249,26 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 
 	ret := NewUpdateChan()
 	go func() {
+		ln := len(compos)
+		UPDATE:
 		for u := range ret.Chan() {
+			if u == nil {
+				break
+			}
+			cnt := 0
 			for i, compo := range compos {
 				chn := chns[i]
+				if chn.Closed() {
+					cnt++
+					continue
+				}
 				if !compo.Filter(u) {
 					chn.Send(u)
+					continue UPDATE
 				}
+			}
+			if cnt == ln {
+				break
 			}
 		}
 		ret.Close()

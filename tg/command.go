@@ -107,14 +107,17 @@ type CommandCompo struct {
 }
 
 // Returns new empty CommandCompo.
-func NewCommandCompo() *CommandCompo {
-	ret := &CommandCompo{}
-	ret.Commands = make(CommandMap)
+func NewCommandCompo(cmds ...*Command) *CommandCompo {
+	ret := (&CommandCompo{}).WithCommands(cmds...)
+	//ret.Commands = make(CommandMap)
 	return ret
 }
 
 // Set the commands to handle.
 func (w *CommandCompo) WithCommands(cmds ...*Command) *CommandCompo {
+	if w.Commands == nil {
+		w.Commands = make(CommandMap)
+	}
 	for _, cmd := range cmds {
 		if cmd.Name == "" {
 			panic("empty command name")

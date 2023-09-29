@@ -12,7 +12,6 @@ type MessageId int64
 type Sendable interface {
 	SendConfig(*Context) (*SendConfig)
 	SetMessage(*Message)
-	GetMessage() *Message
 }
 
 type Errorer interface {

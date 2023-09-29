@@ -49,7 +49,8 @@ func (bot *Bot) Debug(debug bool) *Bot {
 }
 
 // Send the Renderable to the specified session client side.
-// Can be used for both group and private sessions.
+// Can be used for both group and private sessions because
+// SessionId represents both for chat IDs.
 func (bot *Bot) Send(
 	sid SessionId, v Sendable, args ...any,
 ) (*Message, error) {
@@ -61,17 +62,7 @@ func (bot *Bot) Send(
 	c := &Context{
 		context: ctx,
 	}
-
-	config := v.SendConfig(c.WithArg(c.MakeArg(args)))
-	if config.Error != nil {
-		return nil, config.Error
-	}
-
-	msg, err := bot.Api.Send(config.ToApi())
-	if err != nil {
-		return nil, err
-	}
-	return &msg, nil
+	return c.Bot.Send(c.Session.Id, v)
 }
 
 /*func (bot *Bot) Render(

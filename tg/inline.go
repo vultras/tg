@@ -23,49 +23,41 @@ func (kbd *Inline) ToApi() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(rows...)
 }
 
-// Transform the keyboard to widget with the specified text.
-func (kbd *Inline) Compo(text string) *InlineCompo {
-	ret := &InlineCompo{}
-	ret.Inline = kbd
-	ret.Text = text
-	ret.Compo = NewCompo()
-	return ret
-}
-
 // The type implements message with an inline keyboard.
 type InlineCompo struct {
-	*Compo
-	Text string
+	*MessageCompo
 	*Inline
 }
 
 // Implementing the Sendable interface.
-func (widget *InlineCompo) SendConfig(
+func (compo *InlineCompo) SendConfig(
 	c *Context,
 ) (*SendConfig) {
-	var text string
-	if widget.Text != "" {
-		text = widget.Text
-	} else {
-		text = ">"
+
+	sendConfig := compo.MessageCompo.SendConfig(c)
+	sendConfig.Message.ReplyMarkup = compo.Inline.ToApi()
+
+	return sendConfig
+}
+
+// Implementing the Filterer interface.
+func (compo *InlineCompo) Filter(u *Update) bool {
+	if compo == nil || u.CallbackQuery == nil {
+		return true
 	}
 
-	sid := c.Session.Id.ToApi()
-	msgConfig := tgbotapi.NewMessage(sid, text)
-	msgConfig.ReplyMarkup = widget.ToApi()
+	if u.CallbackQuery.Message.MessageID != 
+			compo.Message.MessageID {
+		return true
+	}
 
-	ret := &SendConfig{}
-	ret.Message = &msgConfig
-	return ret
+	return false
 }
 
 // Implementing the Server interface.
 func (widget *InlineCompo) Serve(c *Context) {
 	for u := range c.Input() {
 		var act Action
-		if u.CallbackQuery == nil {
-			continue
-		}
 		cb := tgbotapi.NewCallback(
 			u.CallbackQuery.ID,
 			u.CallbackQuery.Data,
@@ -92,17 +84,4 @@ func (widget *InlineCompo) Serve(c *Context) {
 	}
 }
 
-// Implementing the Filterer interface.
-func (compo *InlineCompo) Filter(u *Update) bool {
-	if compo == nil || u.CallbackQuery == nil {
-		return true
-	}
-
-	if u.CallbackQuery.Message.MessageID != 
-			compo.Message.MessageID {
-		return true
-	}
-
-	return false
-}
 

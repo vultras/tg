@@ -23,17 +23,18 @@ var (
 )
 
 type File struct {
-	*Compo
+	*MessageCompo
 	path    string
 	typ     FileType
 	caption string
 }
 
 func NewFile(path string) *File {
-	ret := &File{
-		path: path,
-	}
-	ret.Compo = NewCompo()
+	ret := &File{}
+
+	ret.MessageCompo = NewMessage("")
+	ret.path = path
+
 	return ret
 }
 
