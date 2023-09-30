@@ -22,12 +22,12 @@ type Bot struct {
 	// Private bot behaviour.
 	behaviour *Behaviour
 	// Group bot behaviour.
-	groupBehaviour *GroupBehaviour
+	//groupBehaviour *GroupBehaviour
 	// Bot behaviour in channels.
-	channelBehaviour *ChannelBehaviour
+	//channelBehaviour *ChannelBehaviour
 	contexts map[SessionId] *context
 	sessions         SessionMap
-	groupSessions    GroupSessionMap
+	//groupSessions    GroupSessionMap
 }
 
 // Return the new bot with empty sessions and behaviour.
@@ -65,39 +65,12 @@ func (bot *Bot) Send(
 	return c.Bot.Send(c.Session.Id, v)
 }
 
-/*func (bot *Bot) Render(
-	sid SessionId, r Renderable,
-) (MessageMap, error) {
-	configs := r.Render(sid, bot)
-	if configs == nil {
-		return nil, MapCollisionErr
-	}
-	messages := make(MessageMap)
-	for _, config := range configs {
-		_, collision := messages[config.Name]
-		if collision {
-			return messages, MapCollisionErr
-		}
-		msg, err := bot.Api.Send(config.ToApi())
-		if err != nil {
-			return messages, err
-		}
-		messages[config.Name] = &msg
-	}
-	return messages, nil
-}*/
-
+// Get session by its ID. Can be used for any scope
+// including private, group and channel.
 func (bot *Bot) GetSession(
 	sid SessionId,
 ) (*Session, bool) {
 	session, ok := bot.sessions[sid]
-	return session, ok
-}
-
-func (bot *Bot) GetGroupSession(
-	sid SessionId,
-) (*GroupSession, bool) {
-	session, ok := bot.groupSessions[sid]
 	return session, ok
 }
 
@@ -112,7 +85,7 @@ func (b *Bot) WithSessions(sessions SessionMap) *Bot {
 	return b
 }
 
-func (b *Bot) WithGroupBehaviour(beh *GroupBehaviour) *Bot {
+/*func (b *Bot) WithGroupBehaviour(beh *GroupBehaviour) *Bot {
 	b.groupBehaviour = beh
 	b.groupSessions = make(GroupSessionMap)
 	return b
@@ -121,12 +94,18 @@ func (b *Bot) WithGroupBehaviour(beh *GroupBehaviour) *Bot {
 func (b *Bot) WithGroupSessions(sessions GroupSessionMap) *Bot {
 	b.groupSessions = sessions
 	return b
+}*/
+
+func (bot *Bot) DeleteCommands() {
+	//tgbotapi.NewBotCommandScopeAllPrivateChats(),
+	cfg := tgbotapi.NewDeleteMyCommands()
+	bot.Api.Request(cfg)
 }
 
 // Setting the command on the user side.
 func (bot *Bot) SetCommands(
 	scope tgbotapi.BotCommandScope,
-	cmdMap map[CommandName] BotCommander,
+	cmdMap CommandMap,
 ) {
 	// First the private commands.
 	names := []string{}
@@ -135,7 +114,7 @@ func (bot *Bot) SetCommands(
 	}
 	sort.Strings([]string(names))
 
-	cmds := []BotCommander{}
+	cmds := []*Command{}
 	for _, name := range names {
 		cmds = append(
 			cmds,
@@ -159,8 +138,7 @@ func (bot *Bot) SetCommands(
 
 // Run the bot with the Behaviour.
 func (bot *Bot) Run() error {
-	if bot.behaviour == nil &&
-		bot.groupBehaviour == nil {
+	if bot.behaviour == nil {
 		return errors.New("no behaviour defined")
 	}
 
@@ -169,9 +147,9 @@ func (bot *Bot) Run() error {
 	}
 
 	uc := tgbotapi.NewUpdate(0)
-	uc.Timeout = 60
+	uc.Timeout = 10
 	updates := bot.Api.GetUpdatesChan(uc)
-	handles := make(map[string]chan *Update)
+	handles := make(map[string] chan *Update)
 
 	if bot.behaviour != nil {
 		chn := make(chan *Update)
@@ -179,7 +157,7 @@ func (bot *Bot) Run() error {
 		go bot.handlePrivate(chn)
 	}
 
-	if bot.groupBehaviour != nil {
+	/*if bot.groupBehaviour != nil {
 		commanders := make(map[CommandName] BotCommander)
 		for k, v := range bot.groupBehaviour.Commands {
 			commanders[k] = v
@@ -192,7 +170,7 @@ func (bot *Bot) Run() error {
 		handles["group"] = chn
 		handles["supergroup"] = chn
 		go bot.handleGroup(chn)
-	}
+	}*/
 
 	me, _ := bot.Api.GetMe()
 	bot.Me = &me
@@ -249,7 +227,7 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 		}
 	}
 }
-
+/*
 func (bot *Bot) handleGroup(updates chan *Update) {
 	var sid SessionId
 	chans := make(map[SessionId]chan *Update)
@@ -273,3 +251,4 @@ func (bot *Bot) handleGroup(updates chan *Update) {
 		chn <- u
 	}
 }
+*/

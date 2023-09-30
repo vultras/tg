@@ -112,6 +112,14 @@ WithInitFunc(func(c *tg.Context) {
 						tg.NewButton("Send location").Go("/send-location"),
 					).Reply(),
 			),
+
+			tg.Func(func(c *tg.Context){
+				for u := range c.Input() {
+					if u.EditedMessage != nil {
+						c.Sendf2("The new message is `%s`", u.EditedMessage.Text)
+					}
+				}
+			}),
 		}
 	}),
 
@@ -208,7 +216,7 @@ WithInitFunc(func(c *tg.Context) {
 
 			return tg.UI{
 				kbd,
-				tg.NewMessage("").Reply(
+				tg.NewMessage("Use the reply keyboard to get back").Reply(
 					backKeyboard.Reply(),
 				),
 			}
@@ -242,7 +250,9 @@ WithInitFunc(func(c *tg.Context) {
 		}),
 	),
 )).WithRoot(tg.NewCommandCompo().
-WithPreStart(tg.Func(func(c *tg.Context){
+WithUsage(tg.Func(func(c *tg.Context){
+	c.Sendf("There is no such command %q", c.Message.Command())
+})).WithPreStart(tg.Func(func(c *tg.Context){
 	c.Sendf("Please, use /start ")
 })).WithCommands(
 	tg.NewCommand("info").

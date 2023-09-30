@@ -6,14 +6,18 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type BotCommander interface {
-	ToApi() tgbotapi.BotCommand
-}
-type Message = tgbotapi.Message
+type CommandType uint8
+const (
+	PrivateCommandType CommandType = iota
+	GroupCommandType
+	ChannelCommandType
+)
+
 type CommandName string
 
 type Command struct {
 	Name        CommandName
+	Type CommandType
 	Description string
 	Action      Action
 	Widget Widget
@@ -61,41 +65,6 @@ func (c *Command) Go(pth Path, args ...any) *Command {
 		Path: pth,
 		Args: args,
 	})
-}
-
-type GroupCommand struct {
-	Name        CommandName
-	Description string
-	Action      GroupAction
-}
-type GroupCommandMap map[CommandName]*GroupCommand
-
-func NewGroupCommand(name CommandName) *GroupCommand {
-	return &GroupCommand{
-		Name: name,
-	}
-}
-
-func (cmd *GroupCommand) WithAction(a GroupAction) *GroupCommand {
-	cmd.Action = a
-	return cmd
-}
-
-func (cmd *GroupCommand) ActionFunc(fn GroupActionFunc) *GroupCommand {
-	return cmd.WithAction(fn)
-}
-
-
-func (cmd *GroupCommand) Desc(desc string) *GroupCommand {
-	cmd.Description = desc
-	return cmd
-}
-
-func (c *GroupCommand) ToApi() tgbotapi.BotCommand {
-	ret := tgbotapi.BotCommand{}
-	ret.Command = string(c.Name)
-	ret.Description = c.Description
-	return ret
 }
 
 // The type is used to recognize commands and execute
@@ -165,13 +134,14 @@ func (widget *CommandCompo) Filter(
 
 // Implementing server.
 func (compo *CommandCompo) Serve(c *Context) {
-	commanders := make(map[CommandName] BotCommander)
+	/*commanders := make(map[CommandName] BotCommander)
 	for k, v := range compo.Commands {
 		commanders[k] = v
-	}
+	}*/
+	c.Bot.DeleteCommands()
 	c.Bot.SetCommands(
 		tgbotapi.NewBotCommandScopeAllPrivateChats(),
-		commanders,
+		compo.Commands,
 	)
 
 	var cmdUpdates *UpdateChan

@@ -32,6 +32,6 @@ func DefineAction(typeName string, a Action) error {
 	return nil
 }
 
-func DefineGroupAction(typ string, a GroupAction) error {
+/*func DefineGroupAction(typ string, a GroupAction) error {
 	return nil
-}
+}*/
