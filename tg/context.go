@@ -170,6 +170,9 @@ func (af ActionFunc) Act(c *Context) {
 
 // Changes screen of user to the Id one.
 func (c *Context) Go(pth Path, args ...any) error {
+	if pth == "-" {
+		pth = c.PrevPath()
+	}
 	// Getting the screen and changing to
 	// then executing its widget.
 	if !pth.IsAbs() {
@@ -244,7 +247,7 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 	}
 	chns := make([]*UpdateChan, len(compos))
 	for i, compo := range compos {
-		chns[i] = c.RunCompo(compo)
+		chns[i] = c.RunCompo(compo, args...)
 	}
 
 	ret := NewUpdateChan()
@@ -283,8 +286,13 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 // Simple way to read strings for widgets.
 func (c *Context) ReadString(pref string, args ...any) string {
 	var text string
-	c.Sendf(pref, args...)
+	if pref != "" {
+		c.Sendf(pref, args...)
+	}
 	for u := range c.Input() {
+		if u == nil {
+			break
+		}
 		if u.Message == nil {
 			continue
 		}

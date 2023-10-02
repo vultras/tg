@@ -2,6 +2,7 @@ package tg
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	//"strings"
 )
 type Message = tgbotapi.Message
 
@@ -74,6 +75,8 @@ func (config *MessageCompo) SendConfig(
 	} else {
 		text = config.Text
 	}
+
+	//text = strings.ReplaceAll(text, "-", "\\-")
 
 	msg := tgbotapi.NewMessage(c.Session.Id.ToApi(), text)
 	ret.Message = &msg

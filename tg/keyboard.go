@@ -30,6 +30,14 @@ func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
 	return kbd
 }
 
+// Adds buttons as one column list.
+func (kbd *Keyboard) List(btns ...*Button) *Keyboard {
+	for _, btn := range btns {
+		kbd.Rows = append(kbd.Rows, ButtonRow{btn})
+	}
+	return kbd
+}
+
 // Set the default action when no button provides
 // key to the data we got.
 func (kbd *Keyboard) WithAction(a Action) *Keyboard {
