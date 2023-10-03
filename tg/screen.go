@@ -11,10 +11,7 @@ type ScreenGo struct {
 }
 
 func (sc ScreenGo) Act(c *Context) {
-	err := c.Go(sc.Path, sc.Args...)
-	if err != nil {
-		panic(err)
-	}
+	c.Go(sc.Path, sc.Args...)
 }
 
 // The same as Act.

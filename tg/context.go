@@ -169,7 +169,7 @@ func (af ActionFunc) Act(c *Context) {
 }
 
 // Changes screen of user to the Id one.
-func (c *Context) Go(pth Path, args ...any) error {
+func (c *Context) Go(pth Path, args ...any) {
 	if pth == "-" {
 		pth = c.PrevPath()
 	}
@@ -180,7 +180,7 @@ func (c *Context) Go(pth Path, args ...any) error {
 	}
 
 	if !c.PathExist(pth) {
-		return ScreenNotExistErr
+		panic(ScreenNotExistErr)
 	}
 	c.prevPath = c.path
 	c.path = pth
@@ -193,8 +193,6 @@ func (c *Context) Go(pth Path, args ...any) error {
 	} else {
 		panic("no widget defined for the screen")
 	}
-
-	return nil
 }
 
 func (c *Context) PathExist(pth Path) bool {
