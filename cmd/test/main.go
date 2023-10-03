@@ -55,7 +55,7 @@ func ExtractSessionData(c *tg.Context) *SessionData {
 
 var (
 	homeButton = tg.NewButton("Home").Go("/")
-	backButton = tg.NewButton("Back").Go("..")
+	backButton = tg.NewButton("Back").Go("-")
 	backKeyboard = tg.NewKeyboard().Row(
 		backButton,
 	)
@@ -292,8 +292,12 @@ WithUsage(tg.Func(func(c *tg.Context){
 		Desc("check of the dynamic work").
 		WithWidget(tg.Func(func(c *tg.Context){
 		})),
+	tg.NewCommand("history").
+		Desc("print go history").
+		WithAction(tg.Func(func(c *tg.Context){
+			c.Sendf("%q", c.History())
+		})),
 	))
-
 func main() {
 	log.Println(beh.Screens)
 	token := os.Getenv("BOT_TOKEN")

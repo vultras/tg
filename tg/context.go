@@ -43,7 +43,8 @@ type context struct {
 	updates *UpdateChan
 	skippedUpdates *UpdateChan
 	// Current screen ID.
-	path, prevPath Path
+	pathHistory []Path
+	//path, prevPath Path
 }
 
 // Goroutie function to handle each user.
@@ -59,11 +60,11 @@ func (c *context) run(a Action, u *Update) {
 }
 
 func (c *Context) Path() Path {
-	return c.path
-}
-
-func (c *Context) PrevPath() Path {
-	return c.prevPath
+	ln := len(c.pathHistory)
+	if ln == 0 {
+		return ""
+	}
+	return c.pathHistory[ln-1]
 }
 
 func (c *Context) Run(a Action) {
@@ -168,10 +169,18 @@ func (af ActionFunc) Act(c *Context) {
 	af(c)
 }
 
+func (c *Context) History() []Path {
+	return c.pathHistory
+}
+
 // Changes screen of user to the Id one.
 func (c *Context) Go(pth Path, args ...any) {
+	var back bool
 	if pth == "-" {
-		pth = c.PrevPath()
+		ln := len(c.pathHistory)
+		pth = c.pathHistory[ln-2]
+		c.pathHistory = c.pathHistory[:ln-1]
+		back = true
 	}
 	// Getting the screen and changing to
 	// then executing its widget.
@@ -182,8 +191,10 @@ func (c *Context) Go(pth Path, args ...any) {
 	if !c.PathExist(pth) {
 		panic(ScreenNotExistErr)
 	}
-	c.prevPath = c.path
-	c.path = pth
+
+	if !back && c.Path() != pth {
+		c.pathHistory = append(c.pathHistory, pth)
+	}
 
 	// Stopping the current widget.
 	screen := c.Bot.behaviour.Screens[pth]
@@ -199,7 +210,7 @@ func (c *Context) PathExist(pth Path) bool {
 	return c.Bot.behaviour.PathExist(pth)
 }
 
-func (c *Context) MakeArg(args []any) any {
+func (c *Context) makeArg(args []any) any {
 	var arg any
 	if len(args) == 1 {
 		arg = args[0]
@@ -210,6 +221,9 @@ func (c *Context) MakeArg(args []any) any {
 }
 
 func (c *Context) RunCompo(compo Component, args ...any) *UpdateChan {
+	if compo == nil {
+		return nil
+	}
 	s, ok := compo.(Sendable)
 	if ok {
 		msg, err := c.Send(s)
@@ -222,7 +236,7 @@ func (c *Context) RunCompo(compo Component, args ...any) *UpdateChan {
 	go func() {
 		compo.Serve(
 			c.WithInput(updates).
-				WithArg(c.MakeArg(args)),
+				WithArg(c.makeArg(args)),
 		)
 		// To let widgets finish themselves before
 		// the channel is closed and close it by themselves.
@@ -238,7 +252,7 @@ func (c *Context) RunWidget(widget Widget, args ...any) *UpdateChan {
 	}
 
 	pth := c.Path()
-	compos := widget.Render(c.WithArg(c.MakeArg(args)))
+	compos := widget.Render(c.WithArg(c.makeArg(args)))
 	// Leave if changed path.
 	if compos == nil || pth != c.Path() {
 		return nil
@@ -300,12 +314,3 @@ func (c *Context) ReadString(pref string, args ...any) string {
 	return text
 }
 
-// Change screen to the previous.
-// To get to the parent screen use GoUp.
-func (c *Context) GoPrev() {
-	pth := c.PrevPath()
-	if pth == "" {
-		c.Go("/")
-	}
-	c.Go(pth)
-}
