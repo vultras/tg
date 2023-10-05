@@ -3,6 +3,7 @@ package tg
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	//"strings"
+	re "regexp"
 )
 type Message = tgbotapi.Message
 
@@ -11,6 +12,16 @@ type MessageCompo struct {
 	Message *Message
 	ParseMode string
 	Text string
+}
+
+var (
+	escapeRe = re.MustCompile(`([_*\[\]()~`+"`"+`>#+-=|{}.!])`)
+)
+
+// Escape special characters in Markdown 2 and return the
+// resulting string.
+func Escape2(str string) string {
+	return string(escapeRe.ReplaceAll([]byte(str), []byte("\\$1")))
 }
 
 func (compo *MessageCompo) SetMessage(msg *Message) {

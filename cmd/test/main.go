@@ -38,7 +38,10 @@ func (w *MutateMessageWidget) Serve(c *tg.Context) {
 	}
 	for u := range c.Input() {
 		text := u.Message.Text
-		c.Sendf("%s", w.Mutate(text))
+		_, err := c.Sendf2("%s", w.Mutate(text))
+		if err != nil {
+			c.Sendf("debug: %q", err)
+		}
 	}
 }
 
@@ -132,6 +135,7 @@ WithInitFunc(func(c *tg.Context) {
 					tg.NewKeyboard().Row(
 						tg.NewButton("Upper case").Go("upper-case"),
 						tg.NewButton("Lower case").Go("lower-case"),
+						tg.NewButton("Escape chars").Go("escape"),
 					).Row(
 						backButton,
 					).Reply(),
@@ -159,6 +163,18 @@ WithInitFunc(func(c *tg.Context) {
 						backKeyboard.Reply(),
 					),
 					NewMutateMessageWidget(strings.ToLower),
+				}
+			}),
+		),
+		tg.NewNode(
+			"escape", tg.RenderFunc(func(c *tg.Context) tg.UI {
+				return tg.UI{
+					tg.NewMessage(
+						"Type a string and the bot will escape characters in it",
+					).Reply(
+						backKeyboard.Reply(),
+					),
+					NewMutateMessageWidget(tg.Escape2),
 				}
 			}),
 		),
