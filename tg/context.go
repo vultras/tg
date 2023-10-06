@@ -178,9 +178,13 @@ func (c *Context) Go(pth Path, args ...any) {
 	var back bool
 	if pth == "-" {
 		ln := len(c.pathHistory)
-		pth = c.pathHistory[ln-2]
-		c.pathHistory = c.pathHistory[:ln-1]
-		back = true
+		if ln <= 1 {
+			pth = "/"
+		} else {
+			pth = c.pathHistory[ln-2]
+			c.pathHistory = c.pathHistory[:ln-1]
+			back = true
+		}
 	}
 	// Getting the screen and changing to
 	// then executing its widget.
