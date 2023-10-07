@@ -26,13 +26,23 @@ func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
 	if len(btns) < 1 {
 		return kbd
 	}
-	kbd.Rows = append(kbd.Rows, btns)
+	retBtns := []*Button{}
+	for _, btn := range btns {
+		if btn == nil {
+			continue
+		}
+		retBtns = append(retBtns, btn)
+	}
+	kbd.Rows = append(kbd.Rows, retBtns)
 	return kbd
 }
 
 // Adds buttons as one column list.
 func (kbd *Keyboard) List(btns ...*Button) *Keyboard {
 	for _, btn := range btns {
+		if btn == nil {
+			continue
+		}
 		kbd.Rows = append(kbd.Rows, ButtonRow{btn})
 	}
 	return kbd
@@ -78,6 +88,8 @@ func (kbd *Keyboard) Inline() *Inline {
 func (kbd *Keyboard) Reply() *Reply {
 	ret := &Reply{}
 	ret.Keyboard = kbd
+	// it is used more often than not once.
+	ret.OneTime = true
 	return ret
 }
 

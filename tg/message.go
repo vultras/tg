@@ -7,7 +7,7 @@ import (
 )
 type Message = tgbotapi.Message
 
-// Simple text message type.
+// Simple text message component type.
 type MessageCompo struct {
 	Message *Message
 	ParseMode string
@@ -16,6 +16,7 @@ type MessageCompo struct {
 
 var (
 	escapeRe = re.MustCompile(`([_*\[\]()~`+"`"+`>#+-=|{}.!])`)
+	NewRawMessage = tgbotapi.NewMessage
 )
 
 // Escape special characters in Markdown 2 and return the
@@ -24,6 +25,8 @@ func Escape2(str string) string {
 	return string(escapeRe.ReplaceAll([]byte(str), []byte("\\$1")))
 }
 
+// Is only implemented to make it sendable and so we can put it
+// return of rendering functions.
 func (compo *MessageCompo) SetMessage(msg *Message) {
 	compo.Message = msg
 }
@@ -36,6 +39,7 @@ func NewMessage(text string) *MessageCompo {
 	return ret
 }
 
+// Return message with the specified parse mode.
 func (msg *MessageCompo) withParseMode(mode string) *MessageCompo {
 	msg.ParseMode = mode
 	return msg
@@ -97,9 +101,9 @@ func (config *MessageCompo) SendConfig(
 }
 
 // Empty serving to use messages in rendering.
-func (compo *MessageCompo) Serve(c *Context) {
-}
+func (compo *MessageCompo) Serve(c *Context) {}
 
+// Filter that skips everything. Messages cannot do anything with updates.
 func (compo *MessageCompo) Filter(_ *Update) bool {
 	// Skip everything
 	return true

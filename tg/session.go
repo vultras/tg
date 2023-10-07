@@ -10,9 +10,11 @@ const (
 	ChannelSessionScope
 )
 
+type ChatId int64
+
 // Represents unique value to identify chats.
 // In fact is simply ID of the chat.
-type SessionId int64
+type SessionId = ChatId
 
 // Convert the SessionId to Telegram API's type.
 func (si SessionId) ToApi() int64 {
