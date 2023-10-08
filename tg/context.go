@@ -39,6 +39,8 @@ type context struct {
 	Session *Session
 	// To reach the bot abilities inside callbacks.
 	Bot     *Bot
+	// Costum status for currently running context.
+	Status any
 	Type ContextType
 	updates *UpdateChan
 	skippedUpdates *UpdateChan
