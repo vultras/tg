@@ -31,10 +31,9 @@ type InlineCompo struct {
 
 // Implementing the Sendable interface.
 func (compo *InlineCompo) SendConfig(
-	c *Context,
+	sid SessionId, bot *Bot,
 ) (*SendConfig) {
-
-	sendConfig := compo.MessageCompo.SendConfig(c)
+	sendConfig := compo.MessageCompo.SendConfig(sid, bot)
 	sendConfig.Message.ReplyMarkup = compo.Inline.ToApi()
 
 	return sendConfig

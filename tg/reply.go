@@ -58,9 +58,9 @@ type ReplyCompo struct {
 
 // Implementing the sendable interface.
 func (compo *ReplyCompo) SendConfig(
-	c *Context,
+	sid SessionId, bot *Bot,
 ) (*SendConfig) {
-	sendConfig := compo.MessageCompo.SendConfig(c)
+	sendConfig := compo.MessageCompo.SendConfig(sid, bot)
 	sendConfig.Message.ReplyMarkup = compo.Reply.ToApi()
 	return sendConfig
 }

@@ -78,7 +78,7 @@ func (msg *MessageCompo) Reply(reply *Reply) *ReplyCompo {
 }
 
 func (config *MessageCompo) SendConfig(
-	c *Context,
+	sid SessionId, bot *Bot,
 ) (*SendConfig) {
 	var (
 		ret SendConfig
@@ -93,7 +93,7 @@ func (config *MessageCompo) SendConfig(
 
 	//text = strings.ReplaceAll(text, "-", "\\-")
 
-	msg := tgbotapi.NewMessage(c.Session.Id.ToApi(), text)
+	msg := tgbotapi.NewMessage(sid.ToApi(), text)
 	ret.Message = &msg
 	ret.Message.ParseMode = config.ParseMode
 

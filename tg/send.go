@@ -10,7 +10,7 @@ type MessageId int64
 // way to define what message will be
 // sent to the side of a user.
 type Sendable interface {
-	SendConfig(*Context) (*SendConfig)
+	SendConfig(SessionId, *Bot) (*SendConfig)
 	SetMessage(*Message)
 }
 

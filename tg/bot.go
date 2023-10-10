@@ -52,7 +52,7 @@ func (bot *Bot) Debug(debug bool) *Bot {
 // Can be used for both group and private sessions because
 // SessionId represents both for chat IDs.
 func (bot *Bot) Send(
-	sid SessionId, v Sendable, args ...any,
+	sid SessionId, v Sendable,
 ) (*Message, error) {
 	ctx, ok := bot.contexts[sid]
 	if !ok {
@@ -63,6 +63,17 @@ func (bot *Bot) Send(
 		context: ctx,
 	}
 	return c.Bot.Send(c.Session.Id, v)
+}
+
+// Send to the session specified its ID raw chattable from the tgbotapi.
+func (bot *Bot) SendRaw(
+	sid SessionId, v tgbotapi.Chattable,
+) (*Message, error) {
+	msg, err := bot.Api.Send(v)
+	if err != nil {
+		return nil, err
+	}
+	return &msg, nil
 }
 
 // Get session by its ID. Can be used for any scope

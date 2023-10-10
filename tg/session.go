@@ -10,11 +10,9 @@ const (
 	ChannelSessionScope
 )
 
-type ChatId int64
-
 // Represents unique value to identify chats.
 // In fact is simply ID of the chat.
-type SessionId = ChatId
+type SessionId int64
 
 // Convert the SessionId to Telegram API's type.
 func (si SessionId) ToApi() int64 {
@@ -50,23 +48,3 @@ func (sm SessionMap) Add(sid SessionId, scope SessionScope) *Session {
 	return ret
 }
 
-// Session information for a group.
-type GroupSession struct {
-	Id SessionId
-	// Information for each user in the group.
-	Data any
-}
-
-// Returns new empty group session with specified group and user IDs.
-func NewGroupSession(id SessionId) *GroupSession {
-	return &GroupSession{
-		Id: id,
-	}
-}
-
-// Map for every group the bot is in.
-type GroupSessionMap map[SessionId]*GroupSession
-
-func (sm GroupSessionMap) Add(sid SessionId) {
-	sm[sid] = NewGroupSession(sid)
-}

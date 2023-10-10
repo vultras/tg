@@ -84,7 +84,7 @@ func (c *Context) Skip(u *Update) {
 
 // Sends to the Sendable object.
 func (c *Context) Send(v Sendable) (*Message, error) {
-	config := v.SendConfig(c)
+	config := v.SendConfig(c.Session.Id, c.Bot)
 	if config.Error != nil {
 		return nil, config.Error
 	}

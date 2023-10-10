@@ -16,7 +16,11 @@ type Keyboard struct {
 // Returns the new keyboard with specified rows.
 func NewKeyboard(rows ...ButtonRow) *Keyboard {
 	ret := &Keyboard{}
-	ret.Rows = rows
+	for _, row := range rows {
+		if row != nil && len(row) > 0 {
+			ret.Rows = append(ret.Rows, row)
+		}
+	}
 	return ret
 }
 
@@ -33,7 +37,10 @@ func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
 		}
 		retBtns = append(retBtns, btn)
 	}
-	kbd.Rows = append(kbd.Rows, retBtns)
+	// Add only if there is something to add.
+	if len(retBtns) > 0 {
+		kbd.Rows = append(kbd.Rows, retBtns)
+	}
 	return kbd
 }
 
