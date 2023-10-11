@@ -77,6 +77,21 @@ func (msg *MessageCompo) Reply(reply *Reply) *ReplyCompo {
 	}
 }
 
+// Transform the message component into the location one.
+func (msg *MessageCompo) Location(
+	lat, long float64,
+) *LocationCompo {
+	ret := &LocationCompo{
+		MessageCompo: msg,
+		Location: Location{
+			Latitude: lat,
+			Longitude: long,
+		},
+	}
+	return ret
+}
+
+// Implementing the Sendable interface.
 func (config *MessageCompo) SendConfig(
 	sid SessionId, bot *Bot,
 ) (*SendConfig) {

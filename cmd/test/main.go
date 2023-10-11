@@ -313,6 +313,15 @@ WithUsage(tg.Func(func(c *tg.Context){
 		WithAction(tg.Func(func(c *tg.Context){
 			c.Sendf("%q", c.History())
 		})),
+	tg.NewCommand("washington").
+		Desc("Send location of the Washington").
+		WithAction(tg.Func(func(c *tg.Context){
+			c.Send(
+				tg.NewMessage("").Location(
+					47.751076, -120.740135,
+				),
+			)
+		})),
 	))
 func main() {
 	log.Println(beh.Screens)

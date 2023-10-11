@@ -29,6 +29,7 @@ type SendConfig struct {
 
 	// The image to be sent.
 	Image *tgbotapi.PhotoConfig
+	Location *tgbotapi.LocationConfig
 	Error error
 }
 
@@ -41,12 +42,13 @@ type MessageMap map[string] *Message
 
 // Convert to the bot.Api.Send format.
 func (config *SendConfig) ToApi() tgbotapi.Chattable {
-	if config.Message != nil {
-		return *config.Message
-	}
-
-	if config.Image != nil {
-		return *config.Image
+	switch {
+	case config.Message != nil :
+		return *(config.Message)
+	case config.Image != nil :
+		return *(config.Image)
+	case config.Location != nil :
+		return *(config.Location)
 	}
 	return nil
 }
