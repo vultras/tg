@@ -7,6 +7,36 @@ import (
 	//"path"
 )
 
+// General context for a specific user.
+// Is always the same and is not reached
+// inside end function-handlers.
+type context struct {
+	Session *Session
+	// To reach the bot abilities inside callbacks.
+	Bot     *Bot
+	// Costum status for currently running context.
+	Status any
+	Type ContextType
+	updates *UpdateChan
+	skippedUpdates *UpdateChan
+	// Current screen ID.
+	pathHistory []Path
+	//path, prevPath Path
+}
+
+// Interface to interact with the user.
+type Context struct {
+	*context
+	// The update that called the Context usage.
+	*Update
+	// Used as way to provide outer values redirection
+	// into widgets and actions. It is like arguments
+	// for REST API request etc.
+	arg any
+	// Instead of updates as argument.
+	input *UpdateChan
+}
+
 // General type function to define actions, single component widgets
 // and components themselves.
 type Func func(*Context)
@@ -32,33 +62,11 @@ const (
 	ActionContextType
 )
 
-// General context for a specific user.
-// Is always the same and is not reached
-// inside end function-handlers.
-type context struct {
-	Session *Session
-	// To reach the bot abilities inside callbacks.
-	Bot     *Bot
-	// Costum status for currently running context.
-	Status any
-	Type ContextType
-	updates *UpdateChan
-	skippedUpdates *UpdateChan
-	// Current screen ID.
-	pathHistory []Path
-	//path, prevPath Path
-}
-
 // Goroutie function to handle each user.
 func (c *Context) serve() {
 	beh := c.Bot.behaviour
 	c.Run(beh.Init)
 	beh.Root.Serve(c)
-}
-
-
-func (c *context) run(a Action, u *Update) {
-	a.Act(&Context{context: c, Update:  u})
 }
 
 func (c *Context) Path() Path {
@@ -67,6 +75,10 @@ func (c *Context) Path() Path {
 		return ""
 	}
 	return c.pathHistory[ln-1]
+}
+
+func (c *Context) Arg() any {
+	return c.arg
 }
 
 func (c *Context) Run(a Action) {
@@ -112,18 +124,6 @@ func (c *Context) SendfHTML(format string, v ...any) (*Message, error) {
 	return c.Send(NewMessage(fmt.Sprintf(format, v...)).HTML())
 }
 
-// Interface to interact with the user.
-type Context struct {
-	*context
-	// The update that called the Context usage.
-	*Update
-	// Used as way to provide outer values redirection
-	// into widgets and actions. It is like arguments
-	// for REST API request etc.
-	Arg any
-	// Instead of updates as argument.
-	input *UpdateChan
-}
 
 // Get the input for current widget.
 // Should be used inside handlers (aka "Serve").
@@ -143,7 +143,7 @@ func (c *Context) Copy() *Context {
 
 func (c *Context) WithArg(v any) *Context {
 	c = c.Copy()
-	c.Arg = v
+	c.arg = v
 	return c
 }
 

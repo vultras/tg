@@ -77,14 +77,14 @@ func (f *File) SendData() string {
 	return ""
 }
 func (f *File) SendConfig(
-	c *Context,
+	sid SessionId, bot *Bot,
 ) (*SendConfig) {
 	var config SendConfig
-	sid := c.Session.Id.ToApi()
+	cid := sid.ToApi()
 
 	switch f.Type() {
 	case ImageFileType:
-		photo := tgbotapi.NewPhoto(sid, f)
+		photo := tgbotapi.NewPhoto(cid, f)
 		photo.Caption = f.caption
 
 		config.Image = &photo

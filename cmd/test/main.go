@@ -30,7 +30,7 @@ func NewMutateMessageWidget(fn func(string) string) *MutateMessageWidget {
 }
 
 func (w *MutateMessageWidget) Serve(c *tg.Context) {
-	args, ok := c.Arg.([]any)
+	args, ok := c.Arg().([]any)
 	if ok {
 		for _, arg := range args {
 			c.Sendf("%v", arg)
