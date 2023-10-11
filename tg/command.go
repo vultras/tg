@@ -24,9 +24,13 @@ type Command struct {
 }
 type CommandMap map[CommandName]*Command
 
-func NewCommand(name CommandName) *Command {
+func NewCommand(name CommandName, desc string) *Command {
+	if name == "" || desc == "" {
+		panic("name and description cannot be an empty string")
+	}
 	return &Command{
 		Name: name,
+		Description: desc,
 	}
 }
 
@@ -53,11 +57,6 @@ func (c *Command) ToApi() tgbotapi.BotCommand {
 	ret.Command = string(c.Name)
 	ret.Description = c.Description
 	return ret
-}
-
-func (c *Command) Desc(desc string) *Command {
-	c.Description = desc
-	return c
 }
 
 func (c *Command) Go(pth Path, args ...any) *Command {
@@ -139,10 +138,13 @@ func (compo *CommandCompo) Serve(c *Context) {
 		commanders[k] = v
 	}*/
 	c.Bot.DeleteCommands()
-	c.Bot.SetCommands(
-		tgbotapi.NewBotCommandScopeAllPrivateChats(),
+	err := c.Bot.SetCommands(
+		tgbotapi.NewBotCommandScopeChat(c.Session.Id.ToApi()),
 		compo.Commands,
 	)
+	if err != nil {
+		c.Sendf("error: %q", err)
+	}
 
 	var cmdUpdates *UpdateChan
 	for u := range c.Input() {

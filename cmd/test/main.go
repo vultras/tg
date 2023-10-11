@@ -271,51 +271,45 @@ WithUsage(tg.Func(func(c *tg.Context){
 })).WithPreStart(tg.Func(func(c *tg.Context){
 	c.Sendf("Please, use /start ")
 })).WithCommands(
-	tg.NewCommand("info").
+	tg.NewCommand("info", "info desc").
 		ActionFunc(func(c *tg.Context){
 			c.SendfHTML(`<a href="https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg">cock</a><strong>cock</strong> die`)
 		}),
-	tg.NewCommand("start").
-		Desc(
-			"start or restart the bot or move to the start screen",
-		).Go("/"),
-	tg.NewCommand("hello").
-		Desc("sends the 'Hello, World!' message back").
+	tg.NewCommand(
+		"start",
+		"start or restart the bot or move to the start screen",
+	).Go("/"),
+	tg.NewCommand("hello", "sends the 'Hello, World!' message back").
 		ActionFunc(func(c *tg.Context) {
 			c.Sendf("Hello, World!")
 		}),
-	tg.NewCommand("read").
-		Desc("reads a string and sends it back").
+	tg.NewCommand("read", "reads a string and sends it back").
 		WithWidget(
 			tg.Func(func(c *tg.Context){
 				str := c.ReadString("Type a string and I will send it back")
 				c.Sendf2("You typed `%s`", str)
 			}),
 		),
-	tg.NewCommand("image").
-		Desc("sends a sample image").
+	tg.NewCommand("image", "sends a sample image").
 		ActionFunc(func(c *tg.Context) {
 			img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
 			c.Send(img)
 		}),
-	tg.NewCommand("botname").
-		Desc("get the bot name").
+	tg.NewCommand("botname", "get the bot name").
 		WithAction(tg.Func(func(c *tg.Context) {
 			bd := c.Bot.Data.(*BotData)
 			c.Sendf("My name is %q", bd.Name)
 		})),
-	tg.NewCommand("dynamic").
-		Desc("check of the dynamic work").
+	tg.NewCommand("dynamic", "check of the dynamic work").
 		WithWidget(tg.Func(func(c *tg.Context){
 		})),
-	tg.NewCommand("history").
-		Desc("print go history").
+	tg.NewCommand("history", "print go history").
 		WithAction(tg.Func(func(c *tg.Context){
 			c.Sendf("%q", c.History())
 		})),
-	tg.NewCommand("washington").
-		Desc("Send location of the Washington").
+	tg.NewCommand("washington", "send location of the Washington").
 		WithAction(tg.Func(func(c *tg.Context){
+			c.Sendf("Washington location")
 			c.Send(
 				tg.NewMessage("").Location(
 					47.751076, -120.740135,

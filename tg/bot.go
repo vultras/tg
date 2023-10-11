@@ -117,13 +117,13 @@ func (bot *Bot) DeleteCommands() {
 func (bot *Bot) SetCommands(
 	scope tgbotapi.BotCommandScope,
 	cmdMap CommandMap,
-) {
+) error {
 	// First the private commands.
 	names := []string{}
 	for name := range cmdMap {
 		names = append(names, string(name))
 	}
-	sort.Strings([]string(names))
+	sort.Strings(names)
 
 	cmds := []*Command{}
 	for _, name := range names {
@@ -144,7 +144,11 @@ func (bot *Bot) SetCommands(
 		botCmds...,
 	)
 
-	bot.Api.Request(cfg)
+	_, err := bot.Api.Request(cfg)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Run the bot with the Behaviour.
