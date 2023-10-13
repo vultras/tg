@@ -25,6 +25,16 @@ func Escape2(str string) string {
 	return string(escapeRe.ReplaceAll([]byte(str), []byte("\\$1")))
 }
 
+func (compo *MessageCompo) Update(c *Context) {
+	edit := tgbotapi.NewEditMessageText(
+		c.Session.Id.ToApi(),
+		compo.Message.MessageID,
+		compo.Text,
+	)
+	msg, _ := c.Bot.Api.Send(edit)
+	compo.Message = &msg
+}
+
 // Is only implemented to make it sendable and so we can put it
 // return of rendering functions.
 func (compo *MessageCompo) SetMessage(msg *Message) {

@@ -46,7 +46,8 @@ func (compo *InlineCompo) Update(c *Context) {
 		compo.Text,
 		compo.Inline.ToApi(),
 	)
-	c.Bot.Api.Send(edit)
+	msg, _ := c.Bot.Api.Send(edit)
+	compo.Message = &msg
 }
 
 // Implementing the Filterer interface.

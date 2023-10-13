@@ -184,6 +184,7 @@ WithInitFunc(func(c *tg.Context) {
 		"inc-dec", tg.RenderFunc(func(c *tg.Context) tg.UI {
 			var (
 				kbd *tg.InlineCompo
+				//cntMsg *tg.MessageCompo
 				inline, std, onlyInc, onlyDec *tg.Inline
 			)
 
@@ -225,6 +226,7 @@ WithInitFunc(func(c *tg.Context) {
 			} else {
 				inline = std
 			}
+
 
 			kbd = tg.NewMessage(
 				fmt.Sprintf(format, d.Counter),
@@ -315,6 +317,9 @@ WithUsage(tg.Func(func(c *tg.Context){
 					47.751076, -120.740135,
 				),
 			)
+		})),
+	tg.NewCommand("invoice", "invoice check").
+		WithAction(tg.Func(func(c *tg.Context){
 		})),
 	))
 func main() {
