@@ -1,7 +1,14 @@
-# got v0.3.2
+# TeleGopher
 
-Go Telegram.
+![Put here TeleGopher image, please]()
 
-The module implements behaviour based interactions with user,
-screens with buttons, etc.
+The high level API to implement complicated
+behaviour based Telegram bots in W3 manner
+with URLs, screens, UIs and so on.
 
+## Tasks
+
+- [] Tech
+  - [] Added easy way to work with payments
+  - [] Make more documentation including the Go embedded one
+- [] Do some examples to show how it works

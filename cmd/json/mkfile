@@ -1,5 +1,0 @@
-all:
-	go build
-
-run:V:
-	./jsoned

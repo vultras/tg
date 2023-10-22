@@ -2,3 +2,4 @@ exe
 *.exe
 *.swp
 tmp
+testbot*

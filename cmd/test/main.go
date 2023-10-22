@@ -6,9 +6,7 @@ import (
 	"strings"
 	"fmt"
 
-	"github.com/mojosa-software/got/tg"
-	//"math/rand"
-	//"strconv"
+	"github.com/reklesio/tg"
 )
 
 type BotData struct {
@@ -57,8 +55,8 @@ func ExtractSessionData(c *tg.Context) *SessionData {
 }
 
 var (
-	homeButton = tg.NewButton("Home").Go("/")
-	backButton = tg.NewButton("Back").Go("-")
+	homeButton   = tg.NewButton("Home").Go("/")
+	backButton   = tg.NewButton("Back").Go("-")
 	backKeyboard = tg.NewKeyboard().Row(
 		backButton,
 	)
@@ -70,9 +68,9 @@ var (
 				l := c.Message.Location
 				c.Sendf(
 					"Longitude: %f\n"+
-					"Latitude: %f\n"+
-					"Heading: %d"+
-					"",
+						"Latitude: %f\n"+
+						"Heading: %d"+
+						"",
 					l.Longitude,
 					l.Latitude,
 					l.Heading,
@@ -84,13 +82,13 @@ var (
 )
 
 var beh = tg.NewBehaviour().
-WithInitFunc(func(c *tg.Context) {
-	// The session initialization.
-	c.Session.Data = &SessionData{}
-}).WithRootNode(tg.NewRootNode(
+	WithInitFunc(func(c *tg.Context) {
+		// The session initialization.
+		c.Session.Data = &SessionData{}
+	}).WithRootNode(tg.NewRootNode(
 	// The "/" widget.
 	tg.RenderFunc(func(c *tg.Context) tg.UI {
-		return tg.UI {
+		return tg.UI{
 			tg.NewMessage(fmt.Sprintf(
 				fmt.Sprint(
 					"Hello, %s!\n",
@@ -108,15 +106,15 @@ WithInitFunc(func(c *tg.Context) {
 
 			tg.NewMessage("Choose your interest").Reply(
 				tg.NewKeyboard().Row(
-						tg.NewButton("Inc/Dec").Go("/inc-dec"),
-					).Row(
-						tg.NewButton("Mutate messages").Go("/mutate-messages"),
-					).Row(
-						tg.NewButton("Send location").Go("/send-location"),
-					).Reply(),
+					tg.NewButton("Inc/Dec").Go("/inc-dec"),
+				).Row(
+					tg.NewButton("Mutate messages").Go("/mutate-messages"),
+				).Row(
+					tg.NewButton("Send location").Go("/send-location"),
+				).Reply(),
 			),
 
-			tg.Func(func(c *tg.Context){
+			tg.Func(func(c *tg.Context) {
 				for u := range c.Input() {
 					if u.EditedMessage != nil {
 						c.Sendf2("The new message is `%s`", u.EditedMessage.Text)
@@ -188,32 +186,31 @@ WithInitFunc(func(c *tg.Context) {
 				inline, std, onlyInc, onlyDec *tg.Inline
 			)
 
-
 			d := ExtractSessionData(c)
 			format := "Press the buttons to increment and decrement.\n" +
 				"Current counter value = %d"
 
 			incBtn := tg.NewButton("+").ActionFunc(func(c *tg.Context) {
-					d.Counter++
-					kbd.Text = fmt.Sprintf(format, d.Counter)
-					if d.Counter == 5 {
-						kbd.Inline = onlyDec
-					} else {
-						kbd.Inline = std
-					}
-					kbd.Update(c)
-				})
+				d.Counter++
+				kbd.Text = fmt.Sprintf(format, d.Counter)
+				if d.Counter == 5 {
+					kbd.Inline = onlyDec
+				} else {
+					kbd.Inline = std
+				}
+				kbd.Update(c)
+			})
 			decBtn := tg.NewButton("-").ActionFunc(func(c *tg.Context) {
-					d.Counter--
-					kbd.Text = fmt.Sprintf(format, d.Counter)
-					if d.Counter == -5 {
-						kbd.Inline = onlyInc
-					} else {
-						kbd.Inline = std
-					}
-					kbd.Update(c)
-					//c.Sendf("%d", d.Counter)
-				})
+				d.Counter--
+				kbd.Text = fmt.Sprintf(format, d.Counter)
+				if d.Counter == -5 {
+					kbd.Inline = onlyInc
+				} else {
+					kbd.Inline = std
+				}
+				kbd.Update(c)
+				//c.Sendf("%d", d.Counter)
+			})
 
 			onlyInc = tg.NewKeyboard().Row(incBtn).Inline()
 			onlyDec = tg.NewKeyboard().Row(decBtn).Inline()
@@ -226,7 +223,6 @@ WithInitFunc(func(c *tg.Context) {
 			} else {
 				inline = std
 			}
-
 
 			kbd = tg.NewMessage(
 				fmt.Sprintf(format, d.Counter),
@@ -243,11 +239,11 @@ WithInitFunc(func(c *tg.Context) {
 
 	tg.NewNode(
 		"send-location", tg.RenderFunc(func(c *tg.Context) tg.UI {
-			return tg.UI {
+			return tg.UI{
 				tg.NewMessage(
 					"Press the button to display your counter",
 				).Inline(
-				tg.NewKeyboard().Row(
+					tg.NewKeyboard().Row(
 						tg.NewButton(
 							"Check",
 						).WithData(
@@ -268,13 +264,13 @@ WithInitFunc(func(c *tg.Context) {
 		}),
 	),
 )).WithRoot(tg.NewCommandCompo().
-WithUsage(tg.Func(func(c *tg.Context){
-	c.Sendf("There is no such command %q", c.Message.Command())
-})).WithPreStart(tg.Func(func(c *tg.Context){
+	WithUsage(tg.Func(func(c *tg.Context) {
+		c.Sendf("There is no such command %q", c.Message.Command())
+	})).WithPreStart(tg.Func(func(c *tg.Context) {
 	c.Sendf("Please, use /start ")
 })).WithCommands(
 	tg.NewCommand("info", "info desc").
-		ActionFunc(func(c *tg.Context){
+		ActionFunc(func(c *tg.Context) {
 			c.SendfHTML(`<a href="https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg">cock</a><strong>cock</strong> die`)
 		}),
 	tg.NewCommand(
@@ -287,7 +283,7 @@ WithUsage(tg.Func(func(c *tg.Context){
 		}),
 	tg.NewCommand("read", "reads a string and sends it back").
 		WithWidget(
-			tg.Func(func(c *tg.Context){
+			tg.Func(func(c *tg.Context) {
 				str := c.ReadString("Type a string and I will send it back")
 				c.Sendf2("You typed `%s`", str)
 			}),
@@ -303,14 +299,14 @@ WithUsage(tg.Func(func(c *tg.Context){
 			c.Sendf("My name is %q", bd.Name)
 		})),
 	tg.NewCommand("dynamic", "check of the dynamic work").
-		WithWidget(tg.Func(func(c *tg.Context){
+		WithWidget(tg.Func(func(c *tg.Context) {
 		})),
 	tg.NewCommand("history", "print go history").
-		WithAction(tg.Func(func(c *tg.Context){
+		WithAction(tg.Func(func(c *tg.Context) {
 			c.Sendf("%q", c.History())
 		})),
 	tg.NewCommand("washington", "send location of the Washington").
-		WithAction(tg.Func(func(c *tg.Context){
+		WithAction(tg.Func(func(c *tg.Context) {
 			c.Sendf("Washington location")
 			c.Send(
 				tg.NewMessage("").Location(
@@ -319,9 +315,10 @@ WithUsage(tg.Func(func(c *tg.Context){
 			)
 		})),
 	tg.NewCommand("invoice", "invoice check").
-		WithAction(tg.Func(func(c *tg.Context){
+		WithAction(tg.Func(func(c *tg.Context) {
 		})),
-	))
+))
+
 func main() {
 	log.Println(beh.Screens)
 	token := os.Getenv("BOT_TOKEN")
