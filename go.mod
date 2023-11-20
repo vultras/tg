@@ -1,4 +1,4 @@
-module github.com/reklesio/tg
+module github.com/omnipunk/tg
 
 go 1.20
 
