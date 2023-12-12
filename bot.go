@@ -9,7 +9,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-type Update = tgbotapi.Update
+
 type Chat = tgbotapi.Chat
 type User = tgbotapi.User
 
@@ -189,13 +189,16 @@ func (bot *Bot) Run() error {
 
 	me, _ := bot.Api.GetMe()
 	bot.Me = &me
-	for u := range updates {
+	for up := range updates {
+		u := &Update{
+			Update: &up,
+		}
 		chn, ok := handles[u.FromChat().Type]
 		if !ok {
 			continue
 		}
 
-		chn <- &u
+		chn <- u
 	}
 
 	return nil
@@ -208,7 +211,7 @@ func (bot *Bot) handlePrivate(updates chan *Update) {
 	for u := range updates {
 		sid = SessionId(u.FromChat().ID)
 		ctx, ctxOk := bot.contexts[sid]
-		 if u.Message != nil && !ctxOk {
+		if u.Message != nil && !ctxOk {
 
 			session, sessionOk := bot.sessions[sid]
 			if !sessionOk {

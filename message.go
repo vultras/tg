@@ -65,7 +65,6 @@ func (msg *MessageCompo) MD2() *MessageCompo {
 	return msg.withParseMode(tgbotapi.ModeMarkdownV2)
 }
 
-
 // Set the HTML parsing mode.
 func (msg *MessageCompo) HTML() *MessageCompo {
 	return msg.withParseMode(tgbotapi.ModeHTML)

@@ -18,6 +18,7 @@ var (
 	ActionNotDefinedErr  = errors.New("action was not defined")
 	MapCollisionErr = errors.New("map collision occured")
 	ContextNotExistErr = errors.New("the context does not exist")
+	StatusCodeErr = errors.New("not success response status code")
 )
 
 func (wut WrongUpdateType) Error() string {

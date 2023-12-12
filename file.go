@@ -10,6 +10,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+type FileConfig = tgbotapi.FileConfig
 type PhotoConfig = tgbotapi.PhotoConfig
 type FileType int
 

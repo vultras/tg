@@ -1,5 +1,14 @@
 package tg
 
+import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+
+type FileId string
+
+type Update struct {
+	*tgbotapi.Update
+	c *Context
+}
+
 // The type represents general update channel.
 type UpdateChan struct {
 	chn chan *Update
@@ -51,3 +60,23 @@ func (updates *UpdateChan) Close() {
 	close(chn)
 }
 
+func (u *Update) HasDocument() bool {
+	return u.Message != nil && u.Message.Document != nil
+}
+
+func (u *Update) DocumentId() FileId {
+	return FileId(u.Update.Message.Document.FileID)
+}
+
+func (u *Update) HasPhotos() bool {
+	return u.Message != nil && u.Message.Photo != nil &&
+		len(u.Message.Photo) != 0
+}
+
+func (u *Update) PhotoIds() []FileId {
+	ret := make([]FileId, len(u.Message.Photo))
+	for i, photo := range u.Message.Photo {
+		ret[i] = FileId(photo.FileID)
+	}
+	return ret
+}

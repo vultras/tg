@@ -2,8 +2,9 @@ package tg
 
 import (
 	"fmt"
-
-	//tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"io"
+	"net/http"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	//"path"
 )
 
@@ -124,6 +125,9 @@ func (c *Context) SendfHTML(format string, v ...any) (*Message, error) {
 	return c.Send(NewMessage(fmt.Sprintf(format, v...)).HTML())
 }
 
+func (c *Context) SendfR(format string, v ...any) (*Message, error) {
+	return c.Send(NewMessage(Escape2(fmt.Sprintf(format, v...))).MD2())
+}
 
 // Get the input for current widget.
 // Should be used inside handlers (aka "Serve").
@@ -318,5 +322,40 @@ func (c *Context) ReadString(pref string, args ...any) string {
 		break
 	}
 	return text
+}
+
+func (c *Context) GetFile(fileId FileId) (io.ReadCloser, error) {
+	file, err := c.Bot.Api.GetFile(tgbotapi.FileConfig{FileID:string(fileId)})
+	if err != nil {
+		return nil, err
+	}
+	r, err := http.Get(fmt.Sprintf(
+		"https://api.telegram.org/file/bot%s/%s",
+		c.Bot.Api.Token,
+		file.FilePath,
+	))
+	if err != nil {
+		return nil, err
+	}
+	if r.StatusCode != 200 {
+		return nil, StatusCodeErr
+	}
+
+	return r.Body, nil
+}
+
+func (c *Context) ReadFile(fileId FileId) ([]byte, error)  {
+	file, err := c.GetFile(fileId)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	bts, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return bts, nil
 }
 
