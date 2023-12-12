@@ -49,8 +49,8 @@ func (btn *Button) Rand() *Button {
 }
 
 // Set the URL for the button. Only for inline buttons.
-func (btn *Button) WithUrl(url string) *Button {
-	btn.Url = url
+func (btn *Button) WithUrl(format string, v ...any) *Button {
+	btn.Url = fmt.Sprintf(format, v...)
 	return btn
 }
 

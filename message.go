@@ -36,6 +36,12 @@ func (compo *MessageCompo) Update(c *Context) {
 	compo.Message = &msg
 }
 
+func (compo *MessageCompo) Delete(c *Context) {
+	cfg := tgbotapi.NewDeleteMessage(c.Session.Id.ToApi(), compo.Message.MessageID)
+	c.Bot.Api.Send(cfg)
+	//c.Sendf("%q", err)
+}
+
 // Is only implemented to make it sendable and so we can put it
 // return of rendering functions.
 func (compo *MessageCompo) SetMessage(msg *Message) {

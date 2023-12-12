@@ -49,8 +49,7 @@ func (compo *InlineCompo) Update(c *Context) {
 	var edit tgbotapi.Chattable
 	markup := compo.Inline.ToApi()
 	ln := len(markup.InlineKeyboard)
-	c.Sendf("%d shit", ln)
-	if ln == 0 {
+	if ln == 0 || compo.Inline.Rows == nil {
 		edit = tgbotapi.NewEditMessageText(
 			c.Session.Id.ToApi(),
 			compo.Message.MessageID,
