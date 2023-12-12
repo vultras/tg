@@ -2,6 +2,9 @@ package tg
 
 import (
 	apix "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"fmt"
+	"crypto/rand"
+	"encoding/base64"
 )
 
 // The type wraps Telegram API's button to provide Action functionality.
@@ -29,10 +32,20 @@ func (btnMap ButtonMap) LocationButton() *Button {
 type ButtonRow []*Button
 
 // Returns new button with the specified text and no action.
-func NewButton(text string) *Button {
+func NewButton(format string, v ...any) *Button {
 	return &Button{
-		Text: text,
+		Text: fmt.Sprintf(format, v...),
 	}
+}
+
+// Randomize buttons data to make the key unique.
+func (btn *Button) Rand() *Button {
+	rData := make([]byte, 8)
+	rand.Read(rData)
+	data := make([]byte, base64.StdEncoding.EncodedLen(len(rData)))
+	base64.StdEncoding.Encode(data, rData)
+	btn.Data = string(data)
+	return btn
 }
 
 // Set the URL for the button. Only for inline buttons.

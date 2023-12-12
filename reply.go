@@ -36,8 +36,14 @@ func (kbd *Reply) ToApi() any {
 
 	rows := [][]tgbotapi.KeyboardButton{}
 	for _, row := range kbd.Rows {
+		if row == nil {
+			continue
+		}
 		buttons := []tgbotapi.KeyboardButton{}
 		for _, button := range row {
+			if button == nil {
+				continue
+			}
 			buttons = append(buttons, button.ToTelegram())
 		}
 		rows = append(rows, buttons)

@@ -24,6 +24,17 @@ func NewKeyboard(rows ...ButtonRow) *Keyboard {
 	return ret
 }
 
+func (kbd *Keyboard) RowNum() int {
+	return len(kbd.Rows)
+}
+
+func (kbd *Keyboard) RemoveRow(i int) {
+	if i<0 || i > len(kbd.Rows) - 1 {
+		return
+	}
+	kbd.Rows = append(kbd.Rows[:i], kbd.Rows[i+1:]...)
+}
+
 // Adds a new button row to the current keyboard.
 func (kbd *Keyboard) Row(btns ...*Button) *Keyboard {
 	// For empty row. We do not need that.
@@ -70,9 +81,6 @@ func (kbd *Keyboard) ActionFunc(fn ActionFunc) *Keyboard {
 
 // Returns the map of buttons. Used to define the Action.
 func (kbd Keyboard) ButtonMap() ButtonMap {
-	if kbd.buttonMap != nil {
-		return kbd.buttonMap
-	}
 	ret := make(ButtonMap)
 	for _, vi := range kbd.Rows {
 		for _, vj := range vi {

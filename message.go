@@ -4,6 +4,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	//"strings"
 	re "regexp"
+	"fmt"
 )
 type Message = tgbotapi.Message
 
@@ -42,9 +43,9 @@ func (compo *MessageCompo) SetMessage(msg *Message) {
 }
 
 // Return new message with the specified text.
-func NewMessage(text string) *MessageCompo {
+func NewMessage(format string, v ...any) *MessageCompo {
 	ret := &MessageCompo{}
-	ret.Text = text
+	ret.Text = fmt.Sprintf(format, v...)
 	ret.ParseMode = tgbotapi.ModeMarkdown
 	return ret
 }

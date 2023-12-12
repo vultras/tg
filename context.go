@@ -8,6 +8,27 @@ import (
 	//"path"
 )
 
+func Go(pth Path) UI {
+	return UI{
+		GoWidget(pth),
+	}
+}
+
+type GoWidget string
+// Implementing the Server interface.
+func (widget GoWidget) Serve(c *Context) {
+	c.input.Close()
+	c.Go(Path(widget))
+}
+
+func (widget GoWidget) Render(c *Context) UI {
+	return UI{widget}
+}
+
+func (widget GoWidget) Filter(u *Update) bool {
+	return true
+}
+
 // General context for a specific user.
 // Is always the same and is not reached
 // inside end function-handlers.

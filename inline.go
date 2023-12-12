@@ -13,8 +13,14 @@ type Inline struct {
 func (kbd *Inline) ToApi() tgbotapi.InlineKeyboardMarkup {
 	rows := [][]tgbotapi.InlineKeyboardButton{}
 	for _, row := range kbd.Rows {
+		if row == nil {
+			continue
+		}
 		buttons := []tgbotapi.InlineKeyboardButton{}
 		for _, button := range row {
+			if button == nil {
+				continue
+			}
 			buttons = append(buttons, button.ToTelegramInline())
 		}
 		rows = append(rows, buttons)
@@ -40,12 +46,24 @@ func (compo *InlineCompo) SendConfig(
 }
 
 func (compo *InlineCompo) Update(c *Context) {
-	edit := tgbotapi.NewEditMessageTextAndMarkup(
-		c.Session.Id.ToApi(),
-		compo.Message.MessageID,
-		compo.Text,
-		compo.Inline.ToApi(),
-	)
+	var edit tgbotapi.Chattable
+	markup := compo.Inline.ToApi()
+	ln := len(markup.InlineKeyboard)
+	c.Sendf("%d shit", ln)
+	if ln == 0 {
+		edit = tgbotapi.NewEditMessageText(
+			c.Session.Id.ToApi(),
+			compo.Message.MessageID,
+			compo.Text,
+		)
+	} else {
+		edit = tgbotapi.NewEditMessageTextAndMarkup(
+			c.Session.Id.ToApi(),
+			compo.Message.MessageID,
+			compo.Text,
+			markup,
+		)
+	}
 	msg, _ := c.Bot.Api.Send(edit)
 	compo.Message = &msg
 }
@@ -66,6 +84,7 @@ func (compo *InlineCompo) Filter(u *Update) bool {
 
 // Implementing the Server interface.
 func (widget *InlineCompo) Serve(c *Context) {
+	btns := widget.ButtonMap()
 	for u := range c.Input() {
 		var act Action
 		cb := tgbotapi.NewCallback(
@@ -80,7 +99,6 @@ func (widget *InlineCompo) Serve(c *Context) {
 			continue
 		}
 
-		btns := widget.ButtonMap()
 		btn, ok := btns[data]
 		if !ok {
 			continue

@@ -1,6 +1,5 @@
 package tg
 
-
 // The type describes dynamic screen widget
 // That can have multiple UI components.
 type Widget interface {
