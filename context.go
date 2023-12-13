@@ -202,6 +202,10 @@ func (c *Context) History() []Path {
 
 // Changes screen of user to the Id one.
 func (c *Context) Go(pth Path, args ...any) {
+	if pth == "" {
+		c.pathHistory = []Path{}
+		return
+	}
 	var back bool
 	if pth == "-" {
 		ln := len(c.pathHistory)

@@ -54,15 +54,16 @@ func (bot *Bot) Debug(debug bool) *Bot {
 func (bot *Bot) Send(
 	sid SessionId, v Sendable,
 ) (*Message, error) {
-	ctx, ok := bot.contexts[sid]
-	if !ok {
-		return nil, ContextNotExistErr
+	config := v.SendConfig(sid, bot)
+	if config.Error != nil {
+		return nil, config.Error
 	}
 
-	c := &Context{
-		context: ctx,
+	msg, err := bot.Api.Send(config.ToApi())
+	if err != nil {
+		return nil, err
 	}
-	return c.Bot.Send(c.Session.Id, v)
+	return &msg, nil
 }
 
 // Send to the session specified its ID raw chattable from the tgbotapi.
