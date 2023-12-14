@@ -6,7 +6,7 @@ import (
 	"strings"
 	"fmt"
 
-	"github.com/omnipunk/tg"
+	"github.com/di4f/tg"
 )
 
 type BotData struct {

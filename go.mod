@@ -1,4 +1,4 @@
-module github.com/omnipunk/tg
+module github.com/di4f/tg
 
 go 1.20
 
