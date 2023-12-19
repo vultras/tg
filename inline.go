@@ -40,31 +40,37 @@ func (compo *InlineCompo) SendConfig(
 	sid SessionId, bot *Bot,
 ) (*SendConfig) {
 	sendConfig := compo.MessageCompo.SendConfig(sid, bot)
-	sendConfig.Message.ReplyMarkup = compo.Inline.ToApi()
+	if len(compo.Inline.Rows) > 0 {
+		sendConfig.Message.ReplyMarkup = compo.Inline.ToApi()
+	}
 
 	return sendConfig
 }
 
+// Update the component on the client side.
 func (compo *InlineCompo) Update(c *Context) {
-	var edit tgbotapi.Chattable
-	markup := compo.Inline.ToApi()
-	ln := len(markup.InlineKeyboard)
-	if ln == 0 || compo.Inline.Rows == nil {
-		edit = tgbotapi.NewEditMessageText(
-			c.Session.Id.ToApi(),
-			compo.Message.MessageID,
-			compo.Text,
-		)
-	} else {
-		edit = tgbotapi.NewEditMessageTextAndMarkup(
-			c.Session.Id.ToApi(),
-			compo.Message.MessageID,
-			compo.Text,
-			markup,
-		)
+	if compo.Message != nil {
+		var edit tgbotapi.Chattable
+		markup := compo.Inline.ToApi()
+		ln := len(markup.InlineKeyboard)
+		if ln == 0 || compo.Inline.Rows == nil {
+			edit = tgbotapi.NewEditMessageText(
+				c.Session.Id.ToApi(),
+				compo.Message.MessageID,
+				compo.Text,
+			)
+		} else {
+			edit = tgbotapi.NewEditMessageTextAndMarkup(
+				c.Session.Id.ToApi(),
+				compo.Message.MessageID,
+				compo.Text,
+				markup,
+			)
+		}
+		msg, _ := c.Bot.Api.Send(edit)
+		compo.Message = &msg
 	}
-	msg, _ := c.Bot.Api.Send(edit)
-	compo.Message = &msg
+	compo.buttonMap = compo.MakeButtonMap()
 }
 
 // Implementing the Filterer interface.
@@ -82,33 +88,35 @@ func (compo *InlineCompo) Filter(u *Update) bool {
 }
 
 // Implementing the Server interface.
-func (widget *InlineCompo) Serve(c *Context) {
-	btns := widget.ButtonMap()
+func (compo *InlineCompo) Serve(c *Context) {
 	for u := range c.Input() {
-		var act Action
-		cb := tgbotapi.NewCallback(
-			u.CallbackQuery.ID,
-			u.CallbackQuery.Data,
-		)
-		data := u.CallbackQuery.Data
-
-		_, err := c.Bot.Api.Request(cb)
-		if err != nil {
-			//return err
-			continue
-		}
-
-		btn, ok := btns[data]
-		if !ok {
-			continue
-		}
-		if btn != nil {
-			act = btn.Action
-		} else if widget.Action != nil {
-			act = widget.Action
-		}
-		c.WithUpdate(u).Run(act)
+		compo.OnOneUpdate(c, u)
 	}
 }
 
+func (compo *InlineCompo) OnOneUpdate(c *Context, u *Update) {
+	var act Action
+	btns := compo.ButtonMap()
+	cb := tgbotapi.NewCallback(
+		u.CallbackQuery.ID,
+		u.CallbackQuery.Data,
+	)
+	data := u.CallbackQuery.Data
+
+	_, err := c.Bot.Api.Request(cb)
+	if err != nil {
+		return
+	}
+
+	btn, ok := btns[data]
+	if !ok {
+		return
+	}
+	if btn != nil {
+		act = btn.Action
+	} else if compo.Action != nil {
+		act = compo.Action
+	}
+	c.WithUpdate(u).Run(act)
+}
 

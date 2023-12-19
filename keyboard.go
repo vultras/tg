@@ -79,8 +79,16 @@ func (kbd *Keyboard) ActionFunc(fn ActionFunc) *Keyboard {
 	return kbd.WithAction(fn)
 }
 
-// Returns the map of buttons. Used to define the Action.
+// Returns the map of buttons.
 func (kbd Keyboard) ButtonMap() ButtonMap {
+	if kbd.buttonMap == nil {
+		kbd.buttonMap = kbd.MakeButtonMap()
+	} 
+	return kbd.buttonMap
+}
+
+// Returns the map of buttons on the most fresh version of the keyboard.
+func (kbd Keyboard) MakeButtonMap() ButtonMap {
 	ret := make(ButtonMap)
 	for _, vi := range kbd.Rows {
 		for _, vj := range vi {

@@ -46,6 +46,10 @@ type context struct {
 	//path, prevPath Path
 }
 
+type Contexter interface {
+	GetContext() *Context
+}
+
 // Interface to interact with the user.
 type Context struct {
 	*context
@@ -57,6 +61,10 @@ type Context struct {
 	arg any
 	// Instead of updates as argument.
 	input *UpdateChan
+}
+
+func (c *Context) GetContext() *Context {
+	return c
 }
 
 // General type function to define actions, single component widgets

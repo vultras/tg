@@ -111,6 +111,8 @@ var beh = tg.NewBehaviour().
 					tg.NewButton("Mutate messages").Go("/mutate-messages"),
 				).Row(
 					tg.NewButton("Send location").Go("/send-location"),
+				).Row(
+					tg.NewButton("Dynamic panel").Go("panel"),
 				).Reply(),
 			),
 
@@ -123,6 +125,53 @@ var beh = tg.NewBehaviour().
 			}),
 		}
 	}),
+
+	tg.NewNode(
+		"panel",
+		tg.RenderFunc(func(c *tg.Context) tg.UI {
+			var (
+				n = 0
+				ln = 4
+				panel *tg.PanelCompo
+			)
+			
+			panel = tg.NewMessage(
+				"Some panel",
+			).Panel(c, tg.RowserFunc(func(c *tg.Context) []tg.ButtonRow{
+				btns := []tg.ButtonRow{
+					tg.ButtonRow{tg.NewButton("Static shit")},
+				}
+				for i:=0 ; i<ln ; i++ {
+					num := 1 + n * ln + i
+					btns = append(btns, tg.ButtonRow{
+						tg.NewButton("%d", num).WithAction(tg.Func(func(c *tg.Context){
+							c.Sendf("%d", num*num)
+						})),
+						tg.NewButton("%d", num*num),
+					})
+				}
+				btns = append(btns, tg.ButtonRow{
+					tg.NewButton("Prev").WithAction(tg.ActionFunc(func(c *tg.Context){
+						n--
+						panel.Update(c)
+					})),
+					tg.NewButton("Next").WithAction(tg.ActionFunc(func(c *tg.Context){
+						n++
+						panel.Update(c)
+					})),
+				})
+
+				return btns
+			}))
+
+			return tg.UI{
+				panel,
+				tg.NewMessage("").Reply(
+					backKeyboard.Reply(),
+				),
+			}
+		}),
+	),
 
 	tg.NewNode(
 		"mutate-messages", tg.RenderFunc(func(c *tg.Context) tg.UI {
