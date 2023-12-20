@@ -63,6 +63,21 @@ type Context struct {
 	input *UpdateChan
 }
 
+// Run commands as other user. Was implemented to
+// make other user to leave the bot at first but
+// maybe you will find another usage for this.
+// Returns users context by specified session ID
+// or nil if the user is not logged in.
+func (c *Context) As(sid SessionId) *Context {
+	n, ok := c.Bot.contexts[sid]
+	if !ok {
+		return nil
+	}
+	return &Context{
+		context: n,
+	}
+}
+
 func (c *Context) GetContext() *Context {
 	return c
 }
