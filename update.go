@@ -61,11 +61,17 @@ func (updates *UpdateChan) Close() {
 }
 
 func (u *Update) HasDocument() bool {
-	return u.Message != nil && u.Message.Document != nil
+	return u != nil &&
+		u.Message != nil &&
+		u.Message.Document != nil
 }
 
 func (u *Update) DocumentId() FileId {
 	return FileId(u.Update.Message.Document.FileID)
+}
+
+func (u *Update) DocumentName() string {
+	return u.Message.Document.FileName
 }
 
 func (u *Update) HasPhotos() bool {

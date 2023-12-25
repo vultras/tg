@@ -156,7 +156,7 @@ func (c *Context) Send(v Sendable) (*Message, error) {
 // Sends the formatted with fmt.Sprintf message to the user
 // using default Markdown parsing format.
 func (c *Context) Sendf(format string, v ...any) (*Message, error) {
-	return c.Send(NewMessage(fmt.Sprintf(format, v...)))
+	return c.Send(NewMessage(format, v...))
 }
 
 // Same as Sendf but uses Markdown 2 format for parsing.
@@ -372,10 +372,11 @@ func (c *Context) ReadString(pref string, args ...any) string {
 	return text
 }
 
-func (c *Context) GetFile(fileId FileId) (io.ReadCloser, error) {
+// Returns the reader for specified file ID and path.
+func (c *Context) GetFile(fileId FileId) (io.ReadCloser, string, error) {
 	file, err := c.Bot.Api.GetFile(tgbotapi.FileConfig{FileID:string(fileId)})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	r, err := http.Get(fmt.Sprintf(
 		"https://api.telegram.org/file/bot%s/%s",
@@ -383,27 +384,27 @@ func (c *Context) GetFile(fileId FileId) (io.ReadCloser, error) {
 		file.FilePath,
 	))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if r.StatusCode != 200 {
-		return nil, StatusCodeErr
+		return nil, "", StatusCodeErr
 	}
 
-	return r.Body, nil
+	return r.Body, file.FilePath, nil
 }
 
-func (c *Context) ReadFile(fileId FileId) ([]byte, error)  {
-	file, err := c.GetFile(fileId)
+func (c *Context) ReadFile(fileId FileId) ([]byte, string, error)  {
+	file, pth, err := c.GetFile(fileId)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer file.Close()
 
 	bts, err := io.ReadAll(file)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return bts, nil
+	return bts, pth, nil
 }
 

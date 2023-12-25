@@ -21,22 +21,16 @@ type Errorer interface {
 // The type is used as an endpoint to send messages
 // via bot.Send .
 type SendConfig struct {
-	// The name will be used to store
-	// the message in the map.
-	Name string
 	// Message with text and keyboard.
 	Message *tgbotapi.MessageConfig
 
 	// The image to be sent.
-	Image *tgbotapi.PhotoConfig
+	Photo *tgbotapi.PhotoConfig
+	Document *tgbotapi.DocumentConfig
 	Location *tgbotapi.LocationConfig
 	Error error
 }
 
-func (cfg *SendConfig) WithName(name string) *SendConfig {
-	cfg.Name = name
-	return cfg
-}
 
 type MessageMap map[string] *Message
 
@@ -45,10 +39,12 @@ func (config *SendConfig) ToApi() tgbotapi.Chattable {
 	switch {
 	case config.Message != nil :
 		return *(config.Message)
-	case config.Image != nil :
-		return *(config.Image)
+	case config.Photo != nil :
+		return *(config.Photo)
 	case config.Location != nil :
 		return *(config.Location)
+	case config.Document != nil :
+		return *(config.Document)
 	}
 	return nil
 }

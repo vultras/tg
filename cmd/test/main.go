@@ -337,10 +337,27 @@ var beh = tg.NewBehaviour().
 				c.Sendf2("You typed `%s`", str)
 			}),
 		),
-	tg.NewCommand("image", "sends a sample image").
+	tg.NewCommand("cat", "sends a sample image of cat").
 		ActionFunc(func(c *tg.Context) {
-			img := tg.NewFile("media/cat.jpg").Image().Caption("A cat!")
-			c.Send(img)
+			f, err := os.Open("media/cat.jpg")
+			if err != nil {
+				c.Sendf("err: %s", err)
+				return
+			}
+			defer f.Close()
+			photo := tg.NewFile(f).Photo().Name("cat.jpg").Caption("A cat!")
+			c.Send(photo)
+		}),
+	tg.NewCommand("document", "sends a sample text document").
+		ActionFunc(func(c *tg.Context) {
+			f, err := os.Open("media/hello.txt")
+			if err != nil {
+				c.Sendf("err: %s", err)
+				return
+			}
+			defer f.Close()
+			doc := tg.NewFile(f).Document().Name("hello.txt").Caption("The document")
+			c.Send(doc)
 		}),
 	tg.NewCommand("botname", "get the bot name").
 		WithAction(tg.Func(func(c *tg.Context) {
